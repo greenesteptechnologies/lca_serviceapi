@@ -7,15 +7,10 @@
     "dev": "nodemon",
     "build": "tsc",
     "start": "node dist/server.js",
-    
     "clean": "rimraf deploy",
-
-    "copy-files": "copyfiles package.json package-lock.json web.config .env.production swagger.yaml deploy",
-
+    "copy-files": "copyfiles package.json package-lock.json web.config .env swagger.yaml deploy",
     "copy-public": "copyfiles -u 1 public/**/* deploy",
-
     "build-production": "npm run clean && npm run build && mkdir deploy && xcopy dist deploy\\dist /E /I /Y && npm run copy-files && npm run copy-public"
-
   },
   "keywords": [],
   "author": "",
@@ -37,6 +32,7 @@
     "yamljs": "^0.3.0"
   },
   "devDependencies": {
+    "@types/cors": "^2.8.19",
     "@types/express": "^5.0.6",
     "@types/js-yaml": "^4.0.9",
     "@types/morgan": "^1.9.10",
