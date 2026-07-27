@@ -1,16 +1,13 @@
 openapi: 3.0.0
 
 info:
-  title: LCA Reference API
+  title: LCA Service API
   version: 1.0.0
-  description: API documentation for Emission Factor Module
+  description: AI and Secrets API only
 
 servers:
-  - url: http://localhost:5001
+  - url: http://localhost:5000
     description: Local
-
-  - url: https://serviceapi.greenesteplca.com
-    description: Production
 
 components:
   securitySchemes:
@@ -18,1257 +15,147 @@ components:
       type: apiKey
       in: header
       name: x-api-key
-
+    BearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
   schemas:
-
-    # SuccessResponse:
-    #   type: object
-    #   properties:
-    #     success:
-    #       type: boolean
-    #       example: true
-
-    #     message:
-    #       type: string
-
-    #     data:
-    #       type: object
-
-    # ErrorResponse:
-    #   type: object
-    #   properties:
-    #     success:
-    #       type: boolean
-    #       example: false
-
-    #     message:
-    #       type: string
-
-    # EmissionFactorMix:
-    #   type: object
-    #   properties:
-    #     componentName:
-    #       type: string
-    #       example: CO2
-
-    #     percentage:
-    #       type: number
-    #       format: decimal
-    #       example: 70
-
-    #     sortOrder:
-    #       type: integer
-    #       example: 1
-
-    # SaveEmissionFactorRequest:
-    #   type: object
-
-    #   required:
-    #     - categoryID
-    #     - factorName
-    #     - efType
-    #     - efCO2e
-    #     - scopeLevel
-    #     - effectiveFrom
-
-    #   properties:
-
-    #     factorID:
-    #       type: integer
-    #       nullable: true
-
-    #     categoryID:
-    #       type: integer
-    #       example: 4
-
-    #     factorName:
-    #       type: string
-    #       example: Diesel Combustion
-
-    #     efType:
-    #       type: string
-    #       enum:
-    #         - ACTIVITY
-    #         - SPEND
-
-    #     efCO2:
-    #       type: number
-    #       example: 2.67
-
-    #     efCH4:
-    #       type: number
-    #       example: 0.0001
-
-    #     efN2O:
-    #       type: number
-    #       example: 0.0002
-
-    #     efCO2e:
-    #       type: number
-    #       example: 2.68
-
-    #     efUnitID:
-    #       type: integer
-    #       nullable: true
-
-    #     currencyCode:
-    #       type: string
-    #       nullable: true
-
-    #     scopeLevel:
-    #       type: string
-    #       enum:
-    #         - GLOBAL
-    #         - REGION
-    #         - COUNTRY
-    #         - STATE
-    #         - CITY
-    #         - TENANT
-
-    #     regionID:
-    #       type: integer
-    #       nullable: true
-
-    #     countryID:
-    #       type: integer
-    #       nullable: true
-
-    #     stateID:
-    #       type: integer
-    #       nullable: true
-
-    #     cityID:
-    #       type: integer
-    #       nullable: true
-
-    #     tenantID:
-    #       type: integer
-    #       nullable: true
-
-    #     sourceID:
-    #       type: integer
-    #       nullable: true
-
-    #     processID:
-    #       type: integer
-    #       nullable: true
-
-    #     industryID:
-    #       type: integer
-    #       nullable: true
-
-    #     productID:
-    #       type: integer
-    #       nullable: true
-
-    #     isCompositeFactor:
-    #       type: boolean
-    #       example: false
-
-    #     note:
-    #       type: string
-    #       nullable: true
-
-    #     effectiveFrom:
-    #       type: string
-    #       format: date
-
-    #     effectiveTo:
-    #       type: string
-    #       format: date
-    #       nullable: true
-
-    #     isActive:
-    #       type: boolean
-    #       example: true
-
-    #     mix:
-    #       type: array
-    #       items:
-    #         $ref: "#/components/schemas/EmissionFactorMix"
-
-    Scenario:
+    SuccessResponse:
       type: object
       properties:
-        ScenarioId:
-          type: integer
-          example: 12
-        TenantId:
-          type: integer
-          example: 1
-        UserId:
-          type: integer
-          example: 5
-        ScenarioName:
-          type: string
-          example: Scenario 1
-        Description:
-          type: string
-          nullable: true
-          example: Testing alternate energy usage
-        Ext1:
-          type: string
-          nullable: true
-        Ext2:
-          type: string
-          nullable: true
-        Ext3:
-          type: string
-          nullable: true
-        Ext4:
-          type: string
-          nullable: true
-        Ext5:
-          type: string
-          nullable: true
-        IsActive:
+        success:
           type: boolean
-          example: true
-        CreatedOn:
+        message:
           type: string
-          format: date-time
-        ModifiedOn:
-          type: string
-          format: date-time
-
-    CreateScenarioRequest:
-      type: object
-      required:
-        - scenarioName
-      properties:
-        scenarioName:
-          type: string
-          example: Scenario 1
-        description:
-          type: string
-          nullable: true
-          example: Testing alternate energy usage
-        ext1:
-          type: string
-          nullable: true
-        ext2:
-          type: string
-          nullable: true
-        ext3:
-          type: string
-          nullable: true
-        ext4:
-          type: string
-          nullable: true
-        ext5:
-          type: string
-          nullable: true
-
-    ScenarioProcessInput:
-      type: object
-      required:
-        - processId
-      properties:
-        processId:
-          type: integer
-          example: 101
-        amount:
-          type: number
-          nullable: true
-          example: 250
-        activityDescription:
-          type: string
-          nullable: true
-          example: Monthly electricity consumption
-        notes:
-          type: string
-          nullable: true
-          example: Monthly electricity bill entry
-
-    SaveScenarioProcessRequest:
-      allOf:
-        - $ref: "#/components/schemas/CreateScenarioRequest"
-        - type: object
-          properties:
-            scenarioId:
-              type: integer
-              nullable: true
-              example: 12
-            processId:
-              type: integer
-              example: 101
-            amount:
-              type: number
-              nullable: true
-              example: 250
-            activityDescription:
-              type: string
-              nullable: true
-              example: Monthly electricity consumption
-            notes:
-              type: string
-              nullable: true
-              example: Monthly electricity bill entry
-      description: Send scenarioId when updating an existing scenario. Send scenarioName when creating a scenario during the first process save.
-
-    SaveScenarioProcessesBulkRequest:
-      allOf:
-        - $ref: "#/components/schemas/CreateScenarioRequest"
-        - type: object
-          required:
-            - processes
-          properties:
-            scenarioId:
-              type: integer
-              nullable: true
-              example: 12
-            processes:
-              type: array
-              minItems: 1
-              items:
-                $ref: "#/components/schemas/ScenarioProcessInput"
-      description: Send scenarioId when updating an existing scenario. Send scenarioName when creating a scenario during the first bulk save.
-
-    AIAssessmentRequest:
-      type: object
-      required:
-        - assessment
-      properties:
-        assessment:
-          type: object
-          properties:
-            messages:
-              type: array
-              items:
-                type: object
-            answers:
-              type: array
-              items:
-                type: object
-                properties:
-                  question:
-                    type: string
-                  answer:
-                    type: string
-            progress:
-              type: integer
-              example: 100
-            isComplete:
-              type: boolean
-              example: true
-
-    GoalScopeRequest:
-      type: object
-      required:
-        - goalScope
-      properties:
-        goalScope:
-          type: object
-          properties:
-            selectedGoals:
-              type: array
-              items:
-                type: string
-            selectedBoundary:
-              type: string
-            functionalUnit:
-              type: string
-            referenceFlow:
-              type: string
-            isoStandard:
-              type: string
-
-    GenerateAIInsightsRequest:
-      type: object
-      properties:
-        modelId:
-          type: integer
-          nullable: true
-          example: 1
-        promptVersion:
-          type: string
-          nullable: true
-          example: lca-insights-v1
-
-    WorkspaceSectionSaveRequest:
-      type: object
-      required:
-        - data
-      properties:
         data:
           type: object
-          description: Section payload object. Shape depends on selected section.
-        aiInput:
-          type: object
-          nullable: true
-          description: Optional AI input payload, mainly for process-insights.
-        modelId:
-          type: integer
-          nullable: true
-        promptVersion:
-          type: string
-          nullable: true
-
-    WorkspaceSnapshotResponse:
-      type: object
-      properties:
-        scenarioId:
-          type: integer
-        tenantId:
-          type: integer
-        userId:
-          type: integer
-        assessment:
-          type: object
-          nullable: true
-        goalScope:
-          type: object
-          nullable: true
-        processInsights:
-          type: object
-          nullable: true
-        scenarioAnalysis:
-          type: object
-          nullable: true
-        executiveSummary:
-          type: object
-          nullable: true
-        modelId:
-          type: integer
-          nullable: true
-        promptVersion:
-          type: string
-          nullable: true
-        status:
-          type: string
-          nullable: true
-
-    AIInsightsResponse:
-      type: object
-      properties:
-        scenarioId:
-          type: integer
-          example: 12
-        status:
-          type: string
-          example: Generated
-        assessment:
-          type: object
-        goalScope:
-          type: object
-        insights:
-          type: object
-          properties:
-            processInsights:
-              type: object
-            scenarioAnalysis:
-              type: object
-            executiveSummary:
-              type: object
-        modelId:
-          type: integer
-          example: 1
-          nullable: true
-        promptVersion:
-          type: string
-          example: lca-insights-v1
-
-security:
-  - ApiKeyAuth: []
 
 paths:
-
-  /health:
-    get:
-      summary: Health Check
-      tags:
-        - System
-
-      responses:
-        "200":
-          description: OK
-
-  /api/v1/test:
-    get:
-      summary: API Connectivity Test
-      tags:
-        - Test
-
-      security:
-        - ApiKeyAuth: []
-
-      responses:
-        "200":
-          description: API working
-
-  /api/v1/ef/reference:
-    get:
-      summary: Get Emission Factor Reference Data
-      tags:
-        - Emission Factor
-
-      security:
-        - ApiKeyAuth: []
-
-      responses:
-        "200":
-          description: Reference data fetched successfully
-
-  /api/v1/ef/dashboard:
-    get:
-      summary: Get Emission Factor Dashboard
-      tags:
-        - Emission Factor
-
-      security:
-        - ApiKeyAuth: []
-
-      responses:
-        "200":
-          description: Dashboard data fetched successfully
-
-  /api/v1/ef/list:
-    get:
-      summary: Get Emission Factor List
-      tags:
-        - Emission Factor
-
-      security:
-        - ApiKeyAuth: []
-
-      parameters:
-
-        - in: query
-          name: searchText
-          schema:
-            type: string
-
-        - in: query
-          name: efType
-          schema:
-            type: string
-            enum:
-              - ACTIVITY
-              - SPEND
-
-        - in: query
-          name: scopeLevel
-          schema:
-            type: string
-
-        - in: query
-          name: isActive
-          schema:
-            type: boolean
-
-        - in: query
-          name: sourceId
-          schema:
-            type: integer
-
-        - in: query
-          name: pageNo
-          schema:
-            type: integer
-            default: 1
-
-        - in: query
-          name: pageSize
-          schema:
-            type: integer
-            default: 20
-
-      responses:
-        "200":
-          description: Emission factor list fetched successfully
-
-  /api/v1/ef/setup:
-    get:
-      summary: Get Emission Factor Setup Data
-      tags:
-        - Emission Factor
-
-      security:
-        - ApiKeyAuth: []
-
-      parameters:
-
-        - in: query
-          name: mode
-          required: true
-          schema:
-            type: string
-            enum:
-              - NEW
-              - VIEW
-              - EDIT
-              - CLONE
-              - VERSION
-
-        - in: query
-          name: id
-          required: false
-          schema:
-            type: integer
-
-      responses:
-        "200":
-          description: Setup data fetched successfully
-
-  /api/v1/ef/save:
+  /api/v1/ai/generate:
     post:
-      summary: Create or Update Emission Factor
-      tags:
-        - Emission Factor
-
+      summary: Generate AI response
       security:
         - ApiKeyAuth: []
-
-      requestBody:
-        required: true
-
-        content:
-          application/json:
-            schema:
-              $ref: "#/components/schemas/SaveEmissionFactorRequest"
-
-      responses:
-        "200":
-          description: Emission factor saved successfully
-
-        "400":
-          description: Validation error
-
-  /api/v1/ef/delete/{id}:
-    delete:
-      summary: Delete Emission Factor
-      tags:
-        - Emission Factor
-
-      security:
-        - ApiKeyAuth: []
-
-      parameters:
-
-        - in: path
-          name: id
-          required: true
-
-          schema:
-            type: integer
-
-      responses:
-        "200":
-          description: Emission factor deleted successfully
-
-        "400":
-          description: Invalid factor
-
-  /api/v1/temp/processmaster/{industryId}:
-    get:
-      summary: Get Process Category Master
-      tags:
-        - Scenario Analysis
-
-      security:
-        - ApiKeyAuth: []
-
-      parameters:
-        - in: path
-          name: industryId
-          required: true
-          schema:
-            type: integer
-          description: Industry ID
-
-        - in: query
-          name: includeProcesses
-          required: false
-          schema:
-            type: boolean
-            default: false
-          description: When true, includes all process master records under their matching process category.
-
-      responses:
-        "200":
-          description: Process category master data fetched successfully. Includes process master data when includeProcesses is true.
-
-        "400":
-          description: Invalid industryId supplied
-
-  /api/v1/temp/myprocess:
-    get:
-      summary: Get My Process
-      tags:
-        - Scenario Analysis
-
-      security:
-        - ApiKeyAuth: []
-
-      parameters:
-        - in: query
-          name: tenantId
-          required: true
-          schema:
-            type: integer
-          description: Tenant ID
-
-        - in: query
-          name: userId
-          required: true
-          schema:
-            type: integer
-          description: User ID
-
-      responses:
-        "200":
-          description: My Process data fetched successfully
-
-        "400":
-          description: tenantId and userId are required
-
-    post:
-      summary: Add My Process
-      tags:
-        - Scenario Analysis
-
-      security:
-        - ApiKeyAuth: []
-
-      parameters:
-        - in: query
-          name: tenantId
-          required: true
-          schema:
-            type: integer
-          description: Tenant ID
-
-        - in: query
-          name: userId
-          required: true
-          schema:
-            type: integer
-          description: User ID
-
+          BearerAuth: []
       requestBody:
         required: true
         content:
           application/json:
             schema:
               type: object
-              required:
-                - processId
               properties:
-                processId:
-                  type: integer
-                  example: 1
-                activityDescription:
+                messages:
+                  type: array
+                  items:
+                    type: object
+                    properties:
+                      role:
+                        type: string
+                      content:
+                        type: string
+                  description: Chat messages array
+                modelName:
                   type: string
-                  example: Electricity consumption for production line
-
+                  description: Preferred selector across companies (e.g., gpt-4o-mini, gpt-4o)
+              required:
+                - messages
       responses:
-        "200":
-          description: Process added successfully or already exists
+        '200':
+          description: AI response generated
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SuccessResponse'
+        '400':
+          description: Invalid request payload
+        '401':
+          description: Unauthorized - missing or invalid API key or JWT token
+        '404':
+          description: No active LLM model configured for the company
 
-        "400":
-          description: tenantId, userId and processId are required
-
-    delete:
-      summary: Delete My Process
-      tags:
-        - Scenario Analysis
-
+  /api/v1/ai/comments/bulk:
+    post:
+      summary: Save AI comments in bulk
+      description: Upserts AI summary comments for the authenticated user. Existing rows are updated; new rows are inserted.
       security:
         - ApiKeyAuth: []
-
-      parameters:
-        - in: query
-          name: tenantId
-          required: true
-          schema:
-            type: integer
-          description: Tenant ID
-
-        - in: query
-          name: userId
-          required: true
-          schema:
-            type: integer
-          description: User ID
-
+          BearerAuth: []
       requestBody:
         required: true
         content:
           application/json:
             schema:
               type: object
-              required:
-                - processId
               properties:
-                processId:
-                  type: integer
-                  example: 1
-
-      responses:
-        "200":
-          description: Process deleted successfully or not found
-
-        "400":
-          description: tenantId, userId and processId are required
-
-  /api/v1/temp/scenario:
-    get:
-      summary: Get My Scenarios
-      description: Returns active scenarios created by the tenant/user.
-      tags:
-        - Scenario Analysis
-
-      security:
-        - ApiKeyAuth: []
-
-      parameters:
-        - in: query
-          name: tenantId
-          required: true
-          schema:
-            type: integer
-          description: Tenant ID
-
-        - in: query
-          name: userId
-          required: true
-          schema:
-            type: integer
-          description: User ID
-
-      responses:
-        "200":
-          description: Scenarios fetched successfully
-          content:
-            application/json:
-              schema:
-                type: object
-                properties:
-                  success:
-                    type: boolean
-                    example: true
-                  message:
-                    type: string
-                    example: Scenarios fetched successfully
-                  data:
-                    type: array
-                    items:
-                      $ref: "#/components/schemas/Scenario"
-
-        "400":
-          description: tenantId and userId are required
-
-    post:
-      summary: Create Scenario
-      description: Creates only the scenario header in LCA_MyScenario. For normal save flow, UI can use scenario-process or scenario-process/bulk directly with scenarioName.
-      tags:
-        - Scenario Analysis
-
-      security:
-        - ApiKeyAuth: []
-
-      parameters:
-        - in: query
-          name: tenantId
-          required: true
-          schema:
-            type: integer
-          description: Tenant ID
-
-        - in: query
-          name: userId
-          required: true
-          schema:
-            type: integer
-          description: User ID
-
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              $ref: "#/components/schemas/CreateScenarioRequest"
-            example:
-              scenarioName: Scenario 1
-              description: Testing alternate energy usage
-
-      responses:
-        "201":
-          description: Scenario created successfully
-          content:
-            application/json:
-              schema:
-                type: object
-                properties:
-                  success:
-                    type: boolean
-                    example: true
-                  message:
-                    type: string
-                    example: Scenario created successfully
-                  data:
-                    $ref: "#/components/schemas/Scenario"
-
-        "400":
-          description: tenantId, userId and scenarioName are required
-
-  /api/v1/temp/scenario/{scenarioId}:
-    delete:
-      summary: Delete Scenario
-      description: Soft deletes a scenario by setting IsActive to false. Deleted scenarios are not returned by Get My Scenarios.
-      tags:
-        - Scenario Analysis
-
-      security:
-        - ApiKeyAuth: []
-
-      parameters:
-        - in: path
-          name: scenarioId
-          required: true
-          schema:
-            type: integer
-          description: Scenario ID
-
-        - in: query
-          name: tenantId
-          required: true
-          schema:
-            type: integer
-          description: Tenant ID
-
-        - in: query
-          name: userId
-          required: true
-          schema:
-            type: integer
-          description: User ID
-
-      responses:
-        "200":
-          description: Scenario deleted successfully or not found
-
-        "400":
-          description: tenantId, userId and scenarioId are required
-
-  /api/v1/temp/scenario-process:
-    post:
-      summary: Save Scenario Process
-      description: Saves one process under a scenario. If scenarioId is not sent, scenarioName is required and a new scenario is created first. If the same process already exists for the scenario, amount and activityDescription are updated.
-      tags:
-        - Scenario Analysis
-
-      security:
-        - ApiKeyAuth: []
-
-      parameters:
-        - in: query
-          name: tenantId
-          required: true
-          schema:
-            type: integer
-          description: Tenant ID
-
-        - in: query
-          name: userId
-          required: true
-          schema:
-            type: integer
-          description: User ID
-
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              $ref: "#/components/schemas/SaveScenarioProcessRequest"
-            examples:
-              createScenarioAndSaveFirstProcess:
-                summary: First save creates scenario and saves one process
-                value:
-                  scenarioName: Scenario 1
-                  description: Testing alternate energy usage
-                  processId: 101
-                  amount: 250
-                  activityDescription: Monthly electricity consumption
-                  notes: Initial baseline value
-              updateExistingScenarioProcess:
-                summary: Update or insert one process in an existing scenario
-                value:
-                  scenarioId: 12
-                  processId: 101
-                  amount: 300
-                  activityDescription: Updated electricity consumption
-                  notes: Revised after meter reading
-
-      responses:
-        "200":
-          description: Scenario process saved successfully
-          content:
-            application/json:
-              schema:
-                type: object
-                properties:
-                  success:
-                    type: boolean
-                    example: true
-                  message:
-                    type: string
-                    example: Scenario process saved successfully
-                  data:
+                comments:
+                  type: array
+                  items:
                     type: object
                     properties:
-                      scenarioId:
+                      draftHeaderId:
                         type: integer
-                        example: 12
-                      processId:
+                      draftDetailId:
                         type: integer
-                        example: 101
-
-        "400":
-          description: tenantId, userId, processId, and either scenarioId or scenarioName are required
-
-        "404":
-          description: Scenario not found
-
-  /api/v1/temp/scenario-process/bulk:
-    post:
-      summary: Save Scenario Processes Bulk
-      description: Saves one or more processes under a scenario in a transaction. If scenarioId is not sent, scenarioName is required and a new scenario is created first. Existing scenario process rows are updated; missing rows are inserted.
-      tags:
-        - Scenario Analysis
-
-      security:
-        - ApiKeyAuth: []
-
-      parameters:
-        - in: query
-          name: tenantId
-          required: true
-          schema:
-            type: integer
-          description: Tenant ID
-
-        - in: query
-          name: userId
-          required: true
-          schema:
-            type: integer
-          description: User ID
-
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              $ref: "#/components/schemas/SaveScenarioProcessesBulkRequest"
-            examples:
-              createScenarioAndSaveMultipleProcesses:
-                summary: First save creates scenario and saves multiple processes
-                value:
-                  scenarioName: Scenario 1
-                  description: Testing alternate energy usage
-                  processes:
-                    - processId: 101
-                      amount: 250
-                      activityDescription: Monthly electricity consumption
-                      notes: Initial baseline value
-                    - processId: 102
-                      amount: 80
-                      activityDescription: Diesel usage
-                      notes: Generator logbook value
-              updateExistingScenarioProcesses:
-                summary: Update or insert multiple processes in an existing scenario
-                value:
-                  scenarioId: 12
-                  processes:
-                    - processId: 101
-                      amount: 300
-                      activityDescription: Updated electricity consumption
-                      notes: Revised after meter reading
-                    - processId: 102
-                      amount: 90
-                      activityDescription: Updated diesel usage
-                      notes: Revised from invoice
-
+                        nullable: true
+                      commentType:
+                        type: string
+                        example: ASSESSMENT
+                      commentText:
+                        type: string
+                      aiModelName:
+                        type: string
+                        example: gpt-4.1-mini
+                    required:
+                      - draftHeaderId
+                      - commentText
       responses:
-        "200":
-          description: Scenario processes saved successfully
+        '200':
+          description: AI comments saved successfully
           content:
             application/json:
               schema:
-                type: object
-                properties:
-                  success:
-                    type: boolean
-                    example: true
-                  message:
-                    type: string
-                    example: Scenario processes saved successfully
-                  data:
-                    type: object
-                    properties:
-                      scenarioId:
-                        type: integer
-                        example: 12
-                      savedCount:
-                        type: integer
-                        example: 2
+                $ref: '#/components/schemas/SuccessResponse'
+        '400':
+          description: Invalid request payload
+        '401':
+          description: Unauthorized - missing or invalid API key or JWT token
 
-        "400":
-          description: tenantId, userId, processes, and either scenarioId or scenarioName are required
-
-        "404":
-          description: Scenario not found
-
-  /api/v1/temp/scenario-process/details:
+  /api/v1/secrets/system-secret/{secretName}:
     get:
-      summary: Get Scenario Details
-      description: Returns scenario process rows. Pass scenarioId to fetch one scenario; omit scenarioId to fetch all scenario process rows for the tenant/user.
-      tags:
-        - Scenario Analysis
-
-      security:
-        - ApiKeyAuth: []
-
-      parameters:
-
-        - in: query
-          name: tenantId
-          required: true
-          schema:
-            type: integer
-          description: Tenant ID
-
-        - in: query
-          name: userId
-          required: true
-          schema:
-            type: integer
-          description: User ID
-
-        - in: query
-          name: scenarioId
-          required: false
-          schema:
-            type: integer
-          description: Scenario ID. Optional. When omitted, all scenario process rows for tenant/user are returned.
-
-      responses:
-        "200":
-          description: Scenario details fetched successfully
-
-        "400":
-          description: tenantId and userId are required
-
-  /api/v1/temp/scenario/{scenarioId}/{tenantId}/{userId}/ai-insights/generate:
-    post:
-      summary: Generate AI Insights
-      tags:
-        - Scenario Analysis
+      summary: Get active system secret by name
+      description: Returns a single active secret value from gs_SystemSecret by SecretName
       security:
         - ApiKeyAuth: []
       parameters:
         - in: path
-          name: scenarioId
-          required: true
-          schema:
-            type: integer
-          description: Scenario ID
-        - in: path
-          name: tenantId
-          required: true
-          schema:
-            type: integer
-          description: Tenant ID
-        - in: path
-          name: userId
-          required: true
-          schema:
-            type: integer
-          description: User ID
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              $ref: "#/components/schemas/GenerateAIInsightsRequest"
-      responses:
-        "200":
-          description: AI insights generated
-
-  /api/v1/temp/scenario/{scenarioId}/{tenantId}/{userId}/workspace:
-    get:
-      summary: Get AI Workspace Snapshot
-      tags:
-        - Scenario Analysis
-      security:
-        - ApiKeyAuth: []
-      parameters:
-        - in: path
-          name: scenarioId
-          required: true
-          schema:
-            type: integer
-        - in: path
-          name: tenantId
-          required: true
-          schema:
-            type: integer
-        - in: path
-          name: userId
-          required: true
-          schema:
-            type: integer
-      responses:
-        "200":
-          description: Workspace snapshot fetched successfully
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/WorkspaceSnapshotResponse"
-
-  /api/v1/temp/scenario/{scenarioId}/{tenantId}/{userId}/workspace/{section}:
-    put:
-      summary: Save Workspace Section
-      description: Save one section. Allowed section values are assessment, goal-scope, process-insights, scenario-analysis, executive-summary.
-      tags:
-        - Scenario Analysis
-      security:
-        - ApiKeyAuth: []
-      parameters:
-        - in: path
-          name: scenarioId
-          required: true
-          schema:
-            type: integer
-        - in: path
-          name: tenantId
-          required: true
-          schema:
-            type: integer
-        - in: path
-          name: userId
-          required: true
-          schema:
-            type: integer
-        - in: path
-          name: section
+          name: secretName
           required: true
           schema:
             type: string
-            enum:
-              - assessment
-              - goal-scope
-              - process-insights
-              - scenario-analysis
-              - executive-summary
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              $ref: "#/components/schemas/WorkspaceSectionSaveRequest"
+          example: DEVEXTREME_LICENSE_KEY
       responses:
-        "200":
-          description: Saved successfully
+        '200':
+          description: System secret retrieved
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SuccessResponse'
+        '404':
+          description: Secret not found
+
+  /api/v1/secrets/llm-models:
+    get:
+      summary: Get active LLM models for company
+      description: Returns LLM models filtered by the authenticated user's company ID from JWT
+      security:
+        - ApiKeyAuth: []
+          BearerAuth: []
+      responses:
+        '200':
+          description: Active LLM models for the company
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SuccessResponse'
+        '401':
+          description: Unauthorized - missing or invalid API key or JWT token

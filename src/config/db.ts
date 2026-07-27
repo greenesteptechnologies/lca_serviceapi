@@ -12,6 +12,8 @@ export const dbConfig: sql.config = {
   port: parseInt(clean(String(ENV.DB_PORT)) || "1433"),
 };
 
+// Second database connection is disabled for now; only the primary DB is used.
+/*
 export const dbConfig2: sql.config = {
   user: clean(ENV.DB2_User),
   password: clean(ENV.DB2_PASSWORD),
@@ -20,23 +22,31 @@ export const dbConfig2: sql.config = {
   options: { encrypt: true, trustServerCertificate: true },
   port: parseInt(clean(String(ENV.DB2_PORT)) || "1433"),
 };
+*/
 
 let poolPromise: Promise<sql.ConnectionPool> | null = null;
-let poolPromise2: Promise<sql.ConnectionPool> | null = null;
+// let poolPromise2: Promise<sql.ConnectionPool> | null = null;
 
 export const getPool = () => {
   if (!poolPromise) {
-    poolPromise = new sql.ConnectionPool(dbConfig).connect();
+    poolPromise = new sql.ConnectionPool(dbConfig)
+      .connect()
+      .catch((error) => {
+        poolPromise = null;
+        throw error;
+      });
   }
   return poolPromise;
 };
 
+/*
 export const getPool2 = () => {
   if (!poolPromise2) {
     poolPromise2 = new sql.ConnectionPool(dbConfig2).connect();
   }
   return poolPromise2;
 };
+*/
 
 export const connectDB = async () => {
   if (!dbConfig.user || !dbConfig.password || !dbConfig.database) {

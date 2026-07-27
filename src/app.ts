@@ -9,11 +9,10 @@ import { logger } from "./config/logger";
 import { requestMiddleware } from "./middlewares/request.middleware";
 import { errorHandler } from "./middlewares/error.middleware";
 
-import testRoutes from "./routes/test.routes";
-import efRoutes from "./routes/modules/ef_factor/ef.routes";
+import aiRoutes from "./routes/ai.routes";
+import secretsRoutes from "./routes/secrets.routes";
 
 import { swaggerServe, swaggerSetup } from "./config/swagger";
-import tempRoutes from "./routes/scenario_analysis/temp_routes";
 
 const app = express();
 
@@ -139,14 +138,8 @@ app.get("/health", (_req, res) => {
 
 // API ROUTES
 
-// Test Routes
-app.use("/api/v1/test", testRoutes);
-
-// Emission Factor Routes
-app.use("/api/v1/ef", efRoutes);
-
-//Temp Routes
-app.use("/api/v1/temp", tempRoutes);
+app.use("/api/v1/ai", aiRoutes);
+app.use("/api/v1/secrets", secretsRoutes);
 
 // GLOBAL ERROR HANDLER
 app.use(errorHandler);

@@ -8,21 +8,27 @@ export const errorHandler = (
   res: Response,
   _next: NextFunction
 ) => {
+  const statusCode = err.status || 500;
+  const safeMessage = statusCode >= 500
+    ? "Internal Server Error"
+    : err.message || "Request failed";
+
   logger.error({
     message: err.message,
     stack: err.stack,
+    code: err.code,
+    field: err.field,
     correlationId: req.correlationId,
     method: req.method,
     url: req.originalUrl,
   });
 
-  res.status(err.status || 500).json(
+  res.status(statusCode).json(
     errorResponse(
-      err.message || "Internal Server Error",
+      safeMessage,
       {
         correlationId: req.correlationId,
         originalUrl: req.originalUrl,
-        error: err,
       },
       err.code,
       err.field ?? null,
