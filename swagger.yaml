@@ -73,6 +73,32 @@ paths:
         '404':
           description: No active LLM model configured for the company
 
+  /api/v1/ai/comments:
+    get:
+      summary: Get AI comments for the authenticated user
+      description: Returns active AI comments for the logged-in user, optionally filtered by draftHeaderId.
+      security:
+        - ApiKeyAuth: []
+          BearerAuth: []
+      parameters:
+        - in: query
+          name: draftHeaderId
+          required: false
+          schema:
+            type: integer
+          description: Optional draft header ID to filter comments for the authenticated user.
+      responses:
+        '200':
+          description: AI comments retrieved
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SuccessResponse'
+        '400':
+          description: Invalid draftHeaderId parameter
+        '401':
+          description: Unauthorized - missing or invalid API key or JWT token
+
   /api/v1/ai/comments/bulk:
     post:
       summary: Save AI comments in bulk

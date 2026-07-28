@@ -6,6 +6,7 @@ import { asyncHandler } from "../utils/asyncHandler";
 import sql, { getPool } from "../config/db";
 import {
   getAIModelForGenerationQuery,
+  getCarbonAssessmentAICommentsQuery,
   upsertCarbonAssessmentAICommentQuery,
   validateDraftDetailForHeaderQuery,
 } from "../queries/temp.queries";
@@ -86,6 +87,69 @@ export const generateAIResponse = asyncHandler(
       );
     } catch (error: any) {
       logger.error(`AI request failed: ${error.message}`);
+      return next(error);
+    }
+  },
+);
+
+export const getAIComments = asyncHandler(
+  async (req: Request, res: Response, next: NextFunction) => {
+    const companyID = req.user?.CompanyId;
+    const userID = req.user?.UserId;
+    const draftHeaderIdParam =
+      (req.params?.draftHeaderId ?? req.query?.draftHeaderId ?? req.query?.DraftHeaderID) as string | undefined;
+    const rawDraftDetailId = req.query?.draftDetailId ?? req.query?.DraftDetailID;
+    const rawCommentType = req.query?.commentType ?? req.query?.CommentType;
+
+    if (!companyID || !userID) {
+      return res
+        .status(401)
+        .json(errorResponse("Valid JWT with CompanyId and UserId is required"));
+    }
+
+    const hasDraftHeaderId =
+      draftHeaderIdParam !== undefined && draftHeaderIdParam !== null && draftHeaderIdParam !== "";
+    const draftHeaderId = hasDraftHeaderId ? Number(draftHeaderIdParam) : null;
+
+    if (hasDraftHeaderId && (!Number.isInteger(draftHeaderId) || (draftHeaderId as number) <= 0)) {
+      return res
+        .status(400)
+        .json(errorResponse("draftHeaderId must be a positive integer when provided"));
+    }
+
+    const hasDraftDetailId =
+      rawDraftDetailId !== undefined && rawDraftDetailId !== null && rawDraftDetailId !== "";
+    const draftDetailId = hasDraftDetailId ? Number(rawDraftDetailId) : null;
+
+    if (hasDraftDetailId && (!Number.isInteger(draftDetailId) || (draftDetailId as number) <= 0)) {
+      return res
+        .status(400)
+        .json(errorResponse("draftDetailId must be a positive integer when provided"));
+    }
+
+    const normalizedCommentType = rawCommentType && String(rawCommentType).trim() ? String(rawCommentType).trim() : null;
+
+    try {
+      const pool = await getPool();
+      const result = await pool
+        .request()
+        .input("CompanyID", sql.Int, companyID)
+        .input("UserID", sql.Int, userID)
+        .input("DraftHeaderID", sql.Int, draftHeaderId)
+        .input("DraftDetailID", sql.Int, draftDetailId)
+        .input("CommentType", sql.NVarChar(100), normalizedCommentType)
+        .query(getCarbonAssessmentAICommentsQuery);
+
+      return res.json(
+        successResponse(
+          {
+            comments: result.recordset,
+          },
+          "AI comments retrieved",
+        ),
+      );
+    } catch (error: any) {
+      logger.error(`AI comment fetch failed: ${error.message}`);
       return next(error);
     }
   },
