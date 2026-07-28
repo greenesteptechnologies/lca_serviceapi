@@ -35,6 +35,27 @@ export const getActiveSystemSecretByNameQuery = `
     AND IsExposedToApi = 1
 `;
 
+export const getCarbonAssessmentAICommentsQuery = `
+  SELECT
+    CompanyID AS companyId,
+    UserID AS userId,
+    DraftHeaderID AS draftHeaderId,
+    DraftDetailID AS draftDetailId,
+    CommentType AS commentType,
+    CommentText AS commentText,
+    AIModelName AS aiModelName,
+    CreatedOn AS createdOn,
+    IsActive AS isActive
+  FROM lca_master.gs_CarbonAssessmentAIComment
+  WHERE CompanyID = @CompanyID
+    AND UserID = @UserID
+    AND IsActive = 1
+    AND (@DraftHeaderID IS NULL OR DraftHeaderID = @DraftHeaderID)
+    AND (@DraftDetailID IS NULL OR DraftDetailID = @DraftDetailID)
+    AND (@CommentType IS NULL OR CommentType = @CommentType)
+  ORDER BY CreatedOn DESC, DraftDetailID
+`;
+
 export const upsertCarbonAssessmentAICommentQuery = `
   UPDATE target WITH (UPDLOCK, HOLDLOCK)
   SET
