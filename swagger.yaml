@@ -3,11 +3,21 @@ openapi: 3.0.0
 info:
   title: LCA Service API
   version: 1.0.0
-  description: AI and Secrets API only
+  description: AI, Secrets, and Company DPP APIs
 
 servers:
   - url: http://localhost:5000
     description: Local
+
+tags:
+  - name: AI
+    description: AI generation and comment endpoints
+  - name: Company DPP
+    description: Company Digital Product Passport API endpoints
+  - name: Company DPP Public
+    description: Public HTML route for published Company DPP pages
+  - name: Secrets
+    description: System secrets and model configuration endpoints
 
 components:
   securitySchemes:
@@ -33,6 +43,8 @@ components:
 paths:
   /api/v1/ai/generate:
     post:
+      tags:
+        - AI
       summary: Generate AI response
       security:
         - ApiKeyAuth: []
@@ -75,6 +87,8 @@ paths:
 
   /api/v1/ai/comments:
     get:
+      tags:
+        - AI
       summary: Get AI comments for the authenticated user
       description: Returns active AI comments for the logged-in user, optionally filtered by draftHeaderId.
       security:
@@ -101,6 +115,8 @@ paths:
 
   /api/v1/ai/comments/bulk:
     post:
+      tags:
+        - AI
       summary: Save AI comments in bulk
       description: Upserts AI summary comments for the authenticated user. Existing rows are updated; new rows are inserted.
       security:
@@ -148,6 +164,8 @@ paths:
 
   /api/v1/secrets/system-secret/{secretName}:
     get:
+      tags:
+        - Secrets
       summary: Get active system secret by name
       description: Returns a single active secret value from gs_SystemSecret by SecretName
       security:
@@ -171,6 +189,8 @@ paths:
 
   /api/v1/secrets/llm-models:
     get:
+      tags:
+        - Secrets
       summary: Get active LLM models for company
       description: Returns LLM models filtered by the authenticated user's company ID from JWT
       security:
@@ -185,3 +205,244 @@ paths:
                 $ref: '#/components/schemas/SuccessResponse'
         '401':
           description: Unauthorized - missing or invalid API key or JWT token
+
+  /api/v1/company-dpp/generate:
+    post:
+      tags:
+        - Company DPP
+      summary: Generate Company DPP
+      description: Generates Company DPP HTML, stores metadata, and version-increments per company from JWT CompanyId.
+      security:
+        - ApiKeyAuth: []
+          BearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - meta
+                - company
+                - emissions
+                - activities
+                - decarbonization
+                - lcaConfig
+                - assurance
+                - certificates
+                - about
+                - sustainabilityMetrics
+                - greenPractices
+                - dataVerification
+                - privacyPolicyUrl
+                - poweredByLabel
+              properties:
+                meta:
+                  type: object
+                  required:
+                    - companyName
+                  properties:
+                    companyName:
+                      type: string
+                    countryName:
+                      type: string
+                    website:
+                      type: string
+                    description:
+                      type: string
+                company:
+                  type: object
+                emissions:
+                  type: object
+                activities:
+                  type: array
+                  items:
+                    type: object
+                decarbonization:
+                  type: object
+                lcaConfig:
+                  type: object
+                assurance:
+                  type: object
+                certificates:
+                  type: array
+                  items:
+                    type: object
+                about:
+                  type: object
+                sustainabilityMetrics:
+                  type: object
+                greenPractices:
+                  type: array
+                  items:
+                    type: object
+                dataVerification:
+                  type: object
+                privacyPolicyUrl:
+                  type: string
+                poweredByLabel:
+                  type: string
+      responses:
+        '201':
+          description: Company DPP generated successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                  message:
+                    type: string
+                  data:
+                    type: object
+                    properties:
+                      passportGUID:
+                        type: string
+                      publicToken:
+                        type: string
+                      passportVersion:
+                        type: integer
+                      htmlFileName:
+                        type: string
+                      htmlFilePath:
+                        type: string
+                      publishedHTMLURL:
+                        type: string
+                      physicalFilePath:
+                        type: string
+        '400':
+          description: Invalid request payload
+        '401':
+          description: Unauthorized - invalid JWT company claims
+
+  /api/v1/company-dpp/meta:
+    get:
+      tags:
+        - Company DPP
+      summary: Get company DPP metadata
+      description: Returns active published DPP metadata for JWT company. Supports filtering by passportType and optional publicToken for a single row.
+      security:
+        - ApiKeyAuth: []
+          BearerAuth: []
+      parameters:
+        - in: query
+          name: passportType
+          required: false
+          schema:
+            type: string
+            enum: [COMPANY, PRODUCT, USER]
+            default: COMPANY
+          description: Passport type filter. Defaults to COMPANY.
+        - in: query
+          name: publicToken
+          required: false
+          schema:
+            type: string
+          description: Optional public token. If omitted, returns all active published rows for the JWT company.
+      responses:
+        '200':
+          description: Company DPP metadata returned
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                  count:
+                    type: integer
+                  data:
+                    oneOf:
+                      - type: array
+                        items:
+                          type: object
+                          properties:
+                            companyDigitalPassportId:
+                              type: integer
+                            companyId:
+                              type: integer
+                            passportGuid:
+                              type: string
+                            passportType:
+                              type: string
+                              enum: [COMPANY, PRODUCT, USER]
+                            passportVersion:
+                              type: integer
+                            htmlFileName:
+                              type: string
+                            htmlFilePath:
+                              type: string
+                            publishedHtmlUrl:
+                              type: string
+                            isPublished:
+                              type: boolean
+                            publishedOn:
+                              type: string
+                              format: date-time
+                            publicToken:
+                              type: string
+                      - type: object
+                        properties:
+                          companyDigitalPassportId:
+                            type: integer
+                          companyId:
+                            type: integer
+                          passportGuid:
+                            type: string
+                          passportType:
+                            type: string
+                            enum: [COMPANY, PRODUCT, USER]
+                          passportVersion:
+                            type: integer
+                          htmlFileName:
+                            type: string
+                          htmlFilePath:
+                            type: string
+                          publishedHtmlUrl:
+                            type: string
+                          isPublished:
+                            type: boolean
+                          publishedOn:
+                            type: string
+                            format: date-time
+                          publicToken:
+                            type: string
+        '401':
+          description: Unauthorized - missing or invalid API key or JWT token
+        '400':
+          description: Invalid passportType value
+        '404':
+          description: Company DPP not found for provided token
+
+  /companydpp/{publicToken}:
+    get:
+      tags:
+        - Company DPP Public
+      summary: Public Company DPP HTML
+      description: Public route that serves generated DPP HTML by token. Supports passportType filtering.
+      parameters:
+        - in: path
+          name: publicToken
+          required: true
+          schema:
+            type: string
+        - in: query
+          name: passportType
+          required: false
+          schema:
+            type: string
+            enum: [COMPANY, PRODUCT, USER]
+            default: COMPANY
+          description: Passport type filter. Defaults to COMPANY.
+      responses:
+        '200':
+          description: HTML content
+          content:
+            text/html:
+              schema:
+                type: string
+        '400':
+          description: Invalid passportType value
+        '404':
+          description: Company DPP not found

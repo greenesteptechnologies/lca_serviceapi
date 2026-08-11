@@ -114,3 +114,70 @@ export const validateDraftDetailForHeaderQuery = `
   WHERE DraftDetailID = @DraftDetailID
     AND DraftHeaderID = @DraftHeaderID
 `;
+
+export const getActiveCompanyDppListQuery = `
+  SELECT
+    CompanyDigitalPassportID AS companyDigitalPassportId,
+    CompanyID AS companyId,
+    PassportGUID AS passportGuid,
+    PassportType AS passportType,
+    PassportVersion AS passportVersion,
+    HTMLFileName AS htmlFileName,
+    HTMLFilePath AS htmlFilePath,
+    PublishedHTMLURL AS publishedHtmlUrl,
+    IsPublished AS isPublished,
+    PublishedOn AS publishedOn,
+    PublicToken AS publicToken,
+    ExtNote1 AS metaJson,
+    ExtNote2 AS payloadJson
+  FROM lca_master.gs_CompanyDigitalPassport
+  WHERE IsActive = 1
+    AND IsPublished = 1
+    AND CompanyID = @CompanyID
+    AND PassportType = @PassportType
+  ORDER BY PublishedOn DESC, CompanyDigitalPassportID DESC
+`;
+
+export const getCompanyDppByTokenQuery = `
+  SELECT TOP (1)
+    CompanyDigitalPassportID AS companyDigitalPassportId,
+    CompanyID AS companyId,
+    PassportGUID AS passportGuid,
+    PassportType AS passportType,
+    PassportVersion AS passportVersion,
+    HTMLFileName AS htmlFileName,
+    HTMLFilePath AS htmlFilePath,
+    PublishedHTMLURL AS publishedHtmlUrl,
+    IsPublished AS isPublished,
+    PublishedOn AS publishedOn,
+    PublicToken AS publicToken,
+    ExtNote1 AS metaJson,
+    ExtNote2 AS payloadJson
+  FROM lca_master.gs_CompanyDigitalPassport
+  WHERE IsActive = 1
+    AND IsPublished = 1
+    AND CompanyID = @CompanyID
+    AND PublicToken = @PublicToken
+    AND PassportType = @PassportType
+  ORDER BY PublishedOn DESC, CompanyDigitalPassportID DESC
+`;
+
+export const getPublicCompanyDppByTokenQuery = `
+  SELECT TOP (1)
+    CompanyDigitalPassportID AS companyDigitalPassportId,
+    CompanyID AS companyId,
+    PassportGUID AS passportGuid,
+    PassportVersion AS passportVersion,
+    HTMLFileName AS htmlFileName,
+    HTMLFilePath AS htmlFilePath,
+    PublishedHTMLURL AS publishedHtmlUrl,
+    IsPublished AS isPublished,
+    PublishedOn AS publishedOn,
+    PublicToken AS publicToken
+  FROM lca_master.gs_CompanyDigitalPassport
+  WHERE IsActive = 1
+    AND IsPublished = 1
+    AND PublicToken = @PublicToken
+    AND PassportType = @PassportType
+  ORDER BY PublishedOn DESC, CompanyDigitalPassportID DESC
+`;

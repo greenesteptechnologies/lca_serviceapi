@@ -29,4 +29,6 @@ export const ENV = {
   LOG_DIR: process.env.LOG_DIR || "",
   LOG_MAX_DAYS: process.env.LOG_MAX_DAYS || "",
   LOG_TO_CONSOLE: process.env.LOG_TO_CONSOLE || "",
+  DPP_STORAGE_ROOT: process.env.DPP_STORAGE_ROOT || "",
+  PUBLIC_BASE_URL: process.env.PUBLIC_BASE_URL || "",
 };
