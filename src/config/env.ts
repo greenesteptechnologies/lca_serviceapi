@@ -31,4 +31,5 @@ export const ENV = {
   LOG_TO_CONSOLE: process.env.LOG_TO_CONSOLE || "",
   DPP_STORAGE_ROOT: process.env.DPP_STORAGE_ROOT || "",
   PUBLIC_BASE_URL: process.env.PUBLIC_BASE_URL || "",
+  COMPANY_DPP_TEMPLATE_PATH: process.env.COMPANY_DPP_TEMPLATE_PATH || "",
 };

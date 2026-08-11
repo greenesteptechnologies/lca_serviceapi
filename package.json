@@ -10,7 +10,8 @@
     "clean": "rimraf deploy",
     "copy-files": "copyfiles package.json package-lock.json web.config .env swagger.yaml deploy",
     "copy-public": "copyfiles -u 1 public/**/* deploy",
-    "build-production": "npm run clean && npm run build && mkdir deploy && xcopy dist deploy\\dist /E /I /Y && npm run copy-files && npm run copy-public"
+    "copy-templates": "copyfiles -u 2 src/templates/**/*.ejs deploy/dist/templates",
+    "build-production": "npm run clean && npm run build && mkdir deploy && xcopy dist deploy\\dist /E /I /Y && npm run copy-templates && npm run copy-files && npm run copy-public"
   },
   "keywords": [],
   "author": "",
