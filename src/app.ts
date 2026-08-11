@@ -11,6 +11,8 @@ import { errorHandler } from "./middlewares/error.middleware";
 
 import aiRoutes from "./routes/ai.routes";
 import secretsRoutes from "./routes/secrets.routes";
+import companyDppRoutes from "./routes/companyDpp.routes";
+import { serveCompanyDppHtml } from "./controllers/companyDpp.controller";
 
 import { swaggerServe, swaggerSetup } from "./config/swagger";
 
@@ -93,7 +95,8 @@ app.use((req, res, next) => {
     req.method === "OPTIONS" ||
     req.path === "/" ||
     req.path === "/health" ||
-    req.path.startsWith("/swagger")
+    req.path.startsWith("/swagger") ||
+    req.path.startsWith("/companydpp")
   ) {
     return next();
   }
@@ -127,6 +130,10 @@ app.get("/", (_req, res) => {
   res.send("Server is running!");
 });
 
+
+// Public company DPP HTML route
+app.get("/companydpp/:publicToken", serveCompanyDppHtml);
+
 // Health Route
 app.get("/health", (_req, res) => {
   res.status(200).json({
@@ -140,6 +147,7 @@ app.get("/health", (_req, res) => {
 
 app.use("/api/v1/ai", aiRoutes);
 app.use("/api/v1/secrets", secretsRoutes);
+app.use("/api/v1/company-dpp", companyDppRoutes);
 
 // GLOBAL ERROR HANDLER
 app.use(errorHandler);
