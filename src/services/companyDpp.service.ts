@@ -126,6 +126,9 @@ function normalizeBaseUrl(rawUrl: string): string {
 
 function resolveTemplatePath(): string {
   const candidates = [
+    ENV.COMPANY_DPP_TEMPLATE_PATH?.trim()
+      ? path.resolve(ENV.COMPANY_DPP_TEMPLATE_PATH.trim())
+      : "",
     path.join(
       process.cwd(),
       "src",
@@ -139,7 +142,19 @@ function resolveTemplatePath(): string {
       "company-dpp",
       "company-dpp-template.ejs",
     ),
-  ];
+    path.resolve(
+      __dirname,
+      "../templates/company-dpp/company-dpp-template.ejs",
+    ),
+    path.resolve(
+      __dirname,
+      "../../templates/company-dpp/company-dpp-template.ejs",
+    ),
+    path.resolve(
+      __dirname,
+      "../../src/templates/company-dpp/company-dpp-template.ejs",
+    ),
+  ].filter(Boolean);
 
   const foundPath = candidates.find(existsSync);
 
@@ -150,6 +165,17 @@ function resolveTemplatePath(): string {
   }
 
   return foundPath;
+}
+
+let templatePathCache: string | null = null;
+
+function getTemplatePath(): string {
+  if (templatePathCache && existsSync(templatePathCache)) {
+    return templatePathCache;
+  }
+
+  templatePathCache = resolveTemplatePath();
+  return templatePathCache;
 }
 
 function resolveStorageRoot(): string {
@@ -169,8 +195,6 @@ function getStorageRootCandidates(): string[] {
 
   return Array.from(new Set(roots));
 }
-
-const TEMPLATE_PATH = resolveTemplatePath();
 
 const STORAGE_ROOT = resolveStorageRoot();
 
@@ -271,7 +295,7 @@ export async function generateCompanyDpp(
     const templateData = template;
 
     // Render EJS
-    const html = await ejs.renderFile(TEMPLATE_PATH, templateData);
+    const html = await ejs.renderFile(getTemplatePath(), templateData);
 
     // Directory
     const dppDirectory = path.join(
