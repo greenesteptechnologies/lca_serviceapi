@@ -8,10 +8,11 @@
     "build": "tsc",
     "start": "node dist/server.js",
     "clean": "rimraf deploy",
-    "copy-files": "copyfiles package.json package-lock.json web.config .env swagger.yaml deploy",
+    "copy-files": "copyfiles package.json package-lock.json web.config swagger.yaml deploy",
+    "copy-env": "if exist .env (copy /Y .env deploy\\.env) else (echo .env file not found, skipping)",
     "copy-public": "copyfiles -u 1 public/**/* deploy",
     "copy-templates": "copyfiles -u 2 src/templates/**/*.ejs deploy/dist/templates",
-    "build-production": "npm run clean && npm run build && mkdir deploy && xcopy dist deploy\\dist /E /I /Y && npm run copy-templates && npm run copy-files && npm run copy-public"
+    "build-production": "npm run clean && npm run build && mkdir deploy && xcopy dist deploy\\dist /E /I /Y && if exist deploy\\dist\\.env del /Q deploy\\dist\\.env && npm run copy-templates && npm run copy-files && npm run copy-env && npm run copy-public"
   },
   "keywords": [],
   "author": "",

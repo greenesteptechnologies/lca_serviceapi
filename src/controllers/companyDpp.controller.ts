@@ -8,6 +8,7 @@ import {
   resolveCompanyDppPhysicalFilePath,
 } from "../services/companyDpp.service";
 import sql, { getPool } from "../config/db";
+import { errorResponse } from "../utils/response";
 import {
   getActiveCompanyDppListQuery,
   getCompanyDppByTokenQuery,
@@ -44,64 +45,71 @@ function isMissing(value: unknown): boolean {
   return value === undefined || value === null || value === "";
 }
 
+function validationError(message: string, field?: string): Error & { status?: number; field?: string | null } {
+  const err = new Error(message) as Error & { status?: number; field?: string | null };
+  err.status = 400;
+  err.field = field ?? null;
+  return err;
+}
+
 function buildGenerationRequest(
   body: CompanyDppGenerateBody,
   companyIdFromToken: number,
 ): CompanyDppGenerationRequest {
   if (!body.meta) {
-    throw new Error("meta section is required");
+    throw validationError("meta section is required", "meta");
   }
 
   if (!body.company) {
-    throw new Error("company section is required");
+    throw validationError("company section is required", "company");
   }
 
   if (!body.emissions) {
-    throw new Error("emissions section is required");
+    throw validationError("emissions section is required", "emissions");
   }
 
   if (!body.activities) {
-    throw new Error("activities section is required");
+    throw validationError("activities section is required", "activities");
   }
 
   if (!body.decarbonization) {
-    throw new Error("decarbonization section is required");
+    throw validationError("decarbonization section is required", "decarbonization");
   }
 
   if (!body.lcaConfig) {
-    throw new Error("lcaConfig section is required");
+    throw validationError("lcaConfig section is required", "lcaConfig");
   }
 
   if (!body.assurance) {
-    throw new Error("assurance section is required");
+    throw validationError("assurance section is required", "assurance");
   }
 
   if (!body.certificates) {
-    throw new Error("certificates section is required");
+    throw validationError("certificates section is required", "certificates");
   }
 
   if (!body.about) {
-    throw new Error("about section is required");
+    throw validationError("about section is required", "about");
   }
 
   if (!body.sustainabilityMetrics) {
-    throw new Error("sustainabilityMetrics section is required");
+    throw validationError("sustainabilityMetrics section is required", "sustainabilityMetrics");
   }
 
   if (!body.greenPractices) {
-    throw new Error("greenPractices section is required");
+    throw validationError("greenPractices section is required", "greenPractices");
   }
 
   if (!body.dataVerification) {
-    throw new Error("dataVerification section is required");
+    throw validationError("dataVerification section is required", "dataVerification");
   }
 
   if (isMissing(body.privacyPolicyUrl)) {
-    throw new Error("privacyPolicyUrl is required");
+    throw validationError("privacyPolicyUrl is required", "privacyPolicyUrl");
   }
 
   if (isMissing(body.poweredByLabel)) {
-    throw new Error("poweredByLabel is required");
+    throw validationError("poweredByLabel is required", "poweredByLabel");
   }
 
   return {
@@ -179,6 +187,7 @@ export async function generateDpp(
         companyId,
       ),
       publicBaseUrl: resolveRequestBaseUrl(req),
+      createdByUserId: Number(req.user?.UserId),
     };
 
     if (isMissing(payload.meta.companyName)) {
@@ -198,14 +207,26 @@ export async function generateDpp(
 
       data: result,
     });
-  } catch (error) {
+  } catch (error: any) {
+    const status = Number(error?.status) || 500;
+    const message =
+      error?.message || "Failed to generate Company Digital Passport";
+
     console.error("Company DPP generation error:", error);
 
-    return res.status(500).json({
-      success: false,
-
-      message: "Failed to generate Company Digital Passport",
-    });
+    return res.status(status).json(
+      errorResponse(
+        status >= 500
+          ? "Failed to generate Company Digital Passport"
+          : message,
+        {
+          correlationId: req.correlationId,
+          originalUrl: req.originalUrl,
+        },
+        error?.code,
+        error?.field ?? null,
+      ),
+    );
   }
 }
 
