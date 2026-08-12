@@ -125,10 +125,17 @@ function normalizeBaseUrl(rawUrl: string): string {
 }
 
 function resolveTemplatePath(): string {
+  const templateRoots = [
+    ENV.DPP_TEMPLATE_ROOT?.trim() ? path.resolve(ENV.DPP_TEMPLATE_ROOT.trim()) : "",
+  ].filter(Boolean);
+
   const candidates = [
-    ENV.COMPANY_DPP_TEMPLATE_PATH?.trim()
-      ? path.resolve(ENV.COMPANY_DPP_TEMPLATE_PATH.trim())
-      : "",
+    ...templateRoots.map((root) =>
+      path.join(root, "company-dpp", "company-dpp-template.ejs"),
+    ),
+    ...templateRoots.map((root) =>
+      path.join(root, "company-dpp-template.ejs"),
+    ),
     path.join(
       process.cwd(),
       "src",
