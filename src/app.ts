@@ -36,8 +36,7 @@ const allowedOrigins = (ENV.ALLOWED_ORIGINS || "")
   .map((origin) => normalizeOrigin(origin))
   .filter(Boolean);
 
-// For dev/testing only — do not enable in production
-// const allowAllOrigins = allowedOrigins.includes("*");
+const allowAllOrigins = allowedOrigins.includes("*");
 
 app.use(
   cors({
@@ -49,7 +48,7 @@ app.use(
 
       const normalizedOrigin = normalizeOrigin(origin);
 
-      if ( /* allowAllOrigins || */ allowedOrigins.includes(normalizedOrigin)) {
+      if (allowAllOrigins || allowedOrigins.includes(normalizedOrigin)) {
         return callback(null, true);
       }
 

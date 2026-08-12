@@ -116,6 +116,7 @@ export interface CompanyDppGenerationRequest {
   meta: CompanyDppRequest;
   template: CompanyDppTemplateData;
   publicBaseUrl?: string;
+  createdByUserId?: number;
 }
 
 const COMPANY_DPP_TYPE = "COMPANY";
@@ -267,9 +268,12 @@ async function getNextPassportVersion(
 export async function generateCompanyDpp(
   data: CompanyDppGenerationRequest,
 ): Promise<CompanyDppResult> {
-  const { meta, template, publicBaseUrl } = data;
+  const { meta, template, publicBaseUrl, createdByUserId } = data;
 
   const { companyID, companyName } = meta;
+  const actorUserId = Number.isInteger(createdByUserId) && createdByUserId! > 0
+    ? createdByUserId
+    : companyID;
 
   const pool = await getPool();
 
@@ -344,6 +348,8 @@ export async function generateCompanyDpp(
       .input("HTMLFilePath", sql.NVarChar(500), htmlFilePath)
       .input("PublishedHTMLURL", sql.NVarChar(500), publishedHTMLURL)
       .input("PublicToken", sql.NVarChar(100), publicToken)
+      .input("CreatedBy", sql.Int, actorUserId)
+      .input("ModifiedBy", sql.Int, actorUserId)
       .input("ExtNote1", sql.NVarChar(sql.MAX), JSON.stringify(meta))
       .input("ExtNote2", sql.NVarChar(sql.MAX), payloadJson).query(`
                 INSERT INTO lca_master.gs_CompanyDigitalPassport
@@ -351,7 +357,7 @@ export async function generateCompanyDpp(
                     CompanyID,
                     PassportGUID,
                     PassportVersion,
-            PassportType,
+                    PassportType,
                     HTMLFileName,
                     HTMLFilePath,
                     PublishedHTMLURL,
@@ -359,6 +365,8 @@ export async function generateCompanyDpp(
                     PublishedOn,
                     CreatedOn,
                     ModifiedOn,
+                    CreatedBy,
+                    ModifiedBy,
                     IsActive,
                     PublicToken,
                     ExtNote1,
@@ -369,7 +377,7 @@ export async function generateCompanyDpp(
                     @CompanyID,
                     @PassportGUID,
                     @PassportVersion,
-            @PassportType,
+                    @PassportType,
                     @HTMLFileName,
                     @HTMLFilePath,
                     @PublishedHTMLURL,
@@ -377,6 +385,8 @@ export async function generateCompanyDpp(
                     GETDATE(),
                     GETDATE(),
                     GETDATE(),
+                    @CreatedBy,
+                    @ModifiedBy,
                     1,
                     @PublicToken,
                     @ExtNote1,

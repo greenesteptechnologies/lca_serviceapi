@@ -1,7 +1,16 @@
 import dotenv from "dotenv";
+import fs from "fs";
 import path from "path";
 
-dotenv.config({ path: path.resolve(__dirname, "../../.env") });
+const candidateEnvPaths = [
+  path.resolve(process.cwd(), ".env"),
+  path.resolve(__dirname, "../../.env"),
+  path.resolve(__dirname, "../../../.env"),
+].filter((envPath, index, arr) => arr.indexOf(envPath) === index);
+
+const resolvedEnvPath = candidateEnvPaths.find((envPath) => fs.existsSync(envPath)) || candidateEnvPaths[0];
+
+dotenv.config({ path: resolvedEnvPath });
 
 export const ENV = {
   PORT: process.env.PORT,
