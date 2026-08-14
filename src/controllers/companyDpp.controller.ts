@@ -5,7 +5,10 @@ import {
   generateCompanyDpp,
   CompanyDppGenerationRequest,
   CompanyDppTemplateData,
+  generateUserDpp,
   resolveCompanyDppPhysicalFilePath,
+  resolveUserDppPhysicalFilePath,
+  UserDppTemplateData,
 } from "../services/companyDpp.service";
 import sql, { getPool } from "../config/db";
 import { errorResponse } from "../utils/response";
@@ -37,6 +40,25 @@ interface CompanyDppGenerateBody {
   poweredByLabel?: string;
 }
 
+interface UserDppGenerateBody {
+  designation?: string;
+  department?: string | null;
+  workModel?: string;
+  location?: string | null;
+  reportingYear?: string;
+  businessTravelEmissions?: number;
+  dailyCommuteEmissions?: number;
+  accommodationEmissions?: number;
+  remoteWorkEmissions?: number;
+  homeElectricityEmissions?: number;
+  deviceEnergyEmissions?: number;
+  totalUserEmissions?: number;
+  activityCount?: number;
+  sustainabilityScore?: number | null;
+  lastCalculationDate?: string;
+  verificationStatus?: string;
+}
+
 type PassportType = "COMPANY" | "PRODUCT" | "USER";
 
 const ALLOWED_PASSPORT_TYPES: PassportType[] = ["COMPANY", "PRODUCT", "USER"];
@@ -45,8 +67,14 @@ function isMissing(value: unknown): boolean {
   return value === undefined || value === null || value === "";
 }
 
-function validationError(message: string, field?: string): Error & { status?: number; field?: string | null } {
-  const err = new Error(message) as Error & { status?: number; field?: string | null };
+function validationError(
+  message: string,
+  field?: string,
+): Error & { status?: number; field?: string | null } {
+  const err = new Error(message) as Error & {
+    status?: number;
+    field?: string | null;
+  };
   err.status = 400;
   err.field = field ?? null;
   return err;
@@ -73,7 +101,10 @@ function buildGenerationRequest(
   }
 
   if (!body.decarbonization) {
-    throw validationError("decarbonization section is required", "decarbonization");
+    throw validationError(
+      "decarbonization section is required",
+      "decarbonization",
+    );
   }
 
   if (!body.lcaConfig) {
@@ -93,15 +124,24 @@ function buildGenerationRequest(
   }
 
   if (!body.sustainabilityMetrics) {
-    throw validationError("sustainabilityMetrics section is required", "sustainabilityMetrics");
+    throw validationError(
+      "sustainabilityMetrics section is required",
+      "sustainabilityMetrics",
+    );
   }
 
   if (!body.greenPractices) {
-    throw validationError("greenPractices section is required", "greenPractices");
+    throw validationError(
+      "greenPractices section is required",
+      "greenPractices",
+    );
   }
 
   if (!body.dataVerification) {
-    throw validationError("dataVerification section is required", "dataVerification");
+    throw validationError(
+      "dataVerification section is required",
+      "dataVerification",
+    );
   }
 
   if (isMissing(body.privacyPolicyUrl)) {
@@ -138,6 +178,81 @@ function buildGenerationRequest(
   };
 }
 
+function getRequiredString(body: UserDppGenerateBody, field: keyof UserDppGenerateBody): string {
+  const value = body[field];
+
+  if (isMissing(value)) {
+    throw validationError(`${field} is required`, field);
+  }
+
+  return String(value).trim();
+}
+
+function getRequiredNumber(body: UserDppGenerateBody, field: keyof UserDppGenerateBody): number {
+  const value = Number(body[field]);
+
+  if (!Number.isFinite(value) || value < 0) {
+    throw validationError(`${field} must be a non-negative number`, field);
+  }
+
+  return value;
+}
+
+function resolveUserDisplayName(user: any, userId: number): string {
+  const displayName = user?.UserName || user?.Username || user?.userName || user?.name || user?.FullName || user?.fullName || user?.email;
+
+  return String(displayName || `Employee ${userId}`).trim();
+}
+
+function resolveOrganizationLabel(user: any, companyId: number): string {
+  const companyName = user?.CompanyName || user?.companyName || user?.OrganizationName || user?.organizationName;
+
+  return String(companyName || `Organization ${companyId}`).trim();
+}
+
+function buildUserGenerationRequest(
+  body: UserDppGenerateBody,
+  user: any,
+): { companyId: number; userId: number; template: UserDppTemplateData } {
+  const companyId = Number(user?.CompanyId);
+  const userId = Number(user?.UserId);
+
+  if (!Number.isInteger(companyId) || companyId <= 0 || !Number.isInteger(userId) || userId <= 0) {
+    const error = validationError("Invalid or missing CompanyId or UserId in token");
+    error.status = 401;
+    throw error;
+  }
+
+  return {
+    companyId,
+    userId,
+    template: {
+      organizationLabel: resolveOrganizationLabel(user, companyId),
+      user: {
+        displayName: resolveUserDisplayName(user, userId),
+        designation: getRequiredString(body, "designation"),
+        department: body.department?.trim() || null,
+        workModel: getRequiredString(body, "workModel"),
+        location: body.location?.trim() || null,
+      },
+      emissions: {
+        reportingYear: getRequiredString(body, "reportingYear"),
+        businessTravel: getRequiredNumber(body, "businessTravelEmissions"),
+        dailyCommute: getRequiredNumber(body, "dailyCommuteEmissions"),
+        accommodation: getRequiredNumber(body, "accommodationEmissions"),
+        remoteWork: getRequiredNumber(body, "remoteWorkEmissions"),
+        homeElectricity: getRequiredNumber(body, "homeElectricityEmissions"),
+        deviceEnergy: getRequiredNumber(body, "deviceEnergyEmissions"),
+        total: getRequiredNumber(body, "totalUserEmissions"),
+      },
+      activityCount: getRequiredNumber(body, "activityCount"),
+      sustainabilityScore: body.sustainabilityScore == null ? null : getRequiredNumber(body, "sustainabilityScore"),
+      lastCalculationDate: getRequiredString(body, "lastCalculationDate"),
+      verificationStatus: getRequiredString(body, "verificationStatus"),
+    },
+  };
+}
+
 function resolveRequestBaseUrl(req: Request): string {
   const forwardedProto = String(req.headers["x-forwarded-proto"] || "")
     .split(",")[0]
@@ -158,7 +273,7 @@ function resolveRequestBaseUrl(req: Request): string {
 }
 
 function resolvePassportType(value: unknown): PassportType | null {
-  const normalized = String(value || "COMPANY").trim().toUpperCase();
+  const normalized = String(value || "").trim().toUpperCase();
 
   if (!ALLOWED_PASSPORT_TYPES.includes(normalized as PassportType)) {
     return null;
@@ -172,53 +287,72 @@ export async function generateDpp(
   res: Response,
 ): Promise<Response> {
   try {
-    const companyId = Number(req.user?.CompanyId);
+    const passportType = resolvePassportType(req.query.passportType);
 
-    if (!Number.isInteger(companyId) || companyId <= 0) {
-      return res.status(401).json({
-        success: false,
-        message: "Invalid or missing CompanyId in token",
+    if (!passportType) {
+      throw validationError("passportType must be one of COMPANY, PRODUCT, USER", "passportType");
+    }
+
+    if (passportType === "COMPANY") {
+      const companyId = Number(req.user?.CompanyId);
+
+      if (!Number.isInteger(companyId) || companyId <= 0) {
+        return res.status(401).json({
+          success: false,
+          message: "Invalid or missing CompanyId in token",
+        });
+      }
+
+      const payload = {
+        ...buildGenerationRequest(req.body as CompanyDppGenerateBody, companyId),
+        publicBaseUrl: resolveRequestBaseUrl(req),
+        createdByUserId: Number(req.user?.UserId),
+      };
+
+      if (isMissing(payload.meta.companyName)) {
+        throw validationError("meta.companyName is required", "meta.companyName");
+      }
+
+      const result = await generateCompanyDpp(payload);
+
+      return res.status(201).json({
+        success: true,
+        message: "Company Digital Passport generated successfully",
+        data: result,
       });
     }
 
-    const payload = {
-      ...buildGenerationRequest(
-        req.body as CompanyDppGenerateBody,
-        companyId,
-      ),
-      publicBaseUrl: resolveRequestBaseUrl(req),
-      createdByUserId: Number(req.user?.UserId),
-    };
+    if (passportType === "USER") {
+      const payload = buildUserGenerationRequest(req.body as UserDppGenerateBody, req.user);
+      const result = await generateUserDpp({
+        ...payload,
+        publicBaseUrl: resolveRequestBaseUrl(req),
+      });
 
-    if (isMissing(payload.meta.companyName)) {
-      return res.status(400).json({
-        success: false,
-
-        message: "meta.companyName is required",
+      return res.status(201).json({
+        success: true,
+        message: "User Digital Passport generated successfully",
+        data: result,
       });
     }
 
-    const result = await generateCompanyDpp(payload);
+    if (passportType === "PRODUCT") {
+      const error = new Error("PRODUCT DPP generation is not implemented yet") as Error & { status?: number };
+      error.status = 501;
+      throw error;
+    }
 
-    return res.status(201).json({
-      success: true,
+    throw validationError("Unsupported passportType", "passportType");
 
-      message: "Company Digital Passport generated successfully",
-
-      data: result,
-    });
   } catch (error: any) {
     const status = Number(error?.status) || 500;
-    const message =
-      error?.message || "Failed to generate Company Digital Passport";
+    const message = error?.message || "Failed to generate Digital Passport";
 
-    console.error("Company DPP generation error:", error);
+    console.error("DPP generation error:", error);
 
     return res.status(status).json(
       errorResponse(
-        status >= 500
-          ? "Failed to generate Company Digital Passport"
-          : message,
+        status >= 500 && status !== 501 ? "Failed to generate Digital Passport" : message,
         {
           correlationId: req.correlationId,
           originalUrl: req.originalUrl,
@@ -339,9 +473,9 @@ export async function serveCompanyDppHtml(
     }
 
     if (!passportType) {
-      return res.status(400).send(
-        "passportType must be one of COMPANY, PRODUCT, USER",
-      );
+      return res
+        .status(400)
+        .send("passportType must be one of COMPANY, PRODUCT, USER");
     }
 
     const pool = await getPool();
@@ -356,11 +490,17 @@ export async function serveCompanyDppHtml(
     }
 
     const row = result.recordset[0];
-    const physicalFilePath = resolveCompanyDppPhysicalFilePath(
-      Number(row.companyId),
-      String(row.publicToken),
-      String(row.htmlFileName || "index.html"),
-    );
+    const physicalFilePath = passportType === "USER"
+      ? resolveUserDppPhysicalFilePath(
+        Number(row.companyId),
+        String(row.publicToken),
+        String(row.htmlFileName || "index.html"),
+      )
+      : resolveCompanyDppPhysicalFilePath(
+        Number(row.companyId),
+        String(row.publicToken),
+        String(row.htmlFileName || "index.html"),
+      );
 
     const html = await fs.readFile(physicalFilePath, "utf8");
     res.setHeader("Content-Type", "text/html; charset=utf-8");
