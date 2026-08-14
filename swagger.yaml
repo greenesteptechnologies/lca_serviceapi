@@ -9,16 +9,6 @@ servers:
   - url: http://localhost:5000
     description: Local
 
-tags:
-  - name: AI
-    description: AI generation and comment endpoints
-  - name: Company DPP
-    description: Company Digital Product Passport API endpoints
-  - name: Company DPP Public
-    description: Public HTML route for published Company DPP pages
-  - name: Secrets
-    description: System secrets and model configuration endpoints
-
 components:
   securitySchemes:
     ApiKeyAuth:
@@ -206,85 +196,77 @@ paths:
         '401':
           description: Unauthorized - missing or invalid API key or JWT token
 
-  /api/v1/company-dpp/generate:
+  /api/v1/dpp/generate:
     post:
       tags:
-        - Company DPP
-      summary: Generate Company DPP
-      description: Generates Company DPP HTML, stores metadata, and version-increments per company from JWT CompanyId.
+        - Digital Passport
+      summary: Generate a Digital Passport
+      description: Generates a passport selected by the required passportType. Company and User identity are derived from JWT claims.
       security:
         - ApiKeyAuth: []
           BearerAuth: []
+      parameters:
+        - in: query
+          name: passportType
+          required: true
+          schema:
+            type: string
+            enum: [COMPANY, USER, PRODUCT]
+          description: Passport type. PRODUCT currently returns 501 until its template is implemented.
       requestBody:
         required: true
         content:
           application/json:
             schema:
-              type: object
-              required:
-                - meta
-                - company
-                - emissions
-                - activities
-                - decarbonization
-                - lcaConfig
-                - assurance
-                - certificates
-                - about
-                - sustainabilityMetrics
-                - greenPractices
-                - dataVerification
-                - privacyPolicyUrl
-                - poweredByLabel
-              properties:
-                meta:
+              oneOf:
+                - title: Company DPP payload
                   type: object
-                  required:
-                    - companyName
+                  required: [meta, company, emissions, activities, decarbonization, lcaConfig, assurance, certificates, about, sustainabilityMetrics, greenPractices, dataVerification, privacyPolicyUrl, poweredByLabel]
                   properties:
-                    companyName:
-                      type: string
-                    countryName:
-                      type: string
-                    website:
-                      type: string
-                    description:
-                      type: string
-                company:
+                    meta:
+                      type: object
+                      required: [companyName]
+                      properties:
+                        companyName: { type: string }
+                        countryName: { type: string }
+                        website: { type: string }
+                        description: { type: string }
+                    company: { type: object }
+                    emissions: { type: object }
+                    activities: { type: array, items: { type: object } }
+                    decarbonization: { type: object }
+                    lcaConfig: { type: object }
+                    assurance: { type: object }
+                    certificates: { type: array, items: { type: object } }
+                    about: { type: object }
+                    sustainabilityMetrics: { type: object }
+                    greenPractices: { type: array, items: { type: object } }
+                    dataVerification: { type: object }
+                    privacyPolicyUrl: { type: string }
+                    poweredByLabel: { type: string }
+                - title: User DPP payload
                   type: object
-                emissions:
-                  type: object
-                activities:
-                  type: array
-                  items:
-                    type: object
-                decarbonization:
-                  type: object
-                lcaConfig:
-                  type: object
-                assurance:
-                  type: object
-                certificates:
-                  type: array
-                  items:
-                    type: object
-                about:
-                  type: object
-                sustainabilityMetrics:
-                  type: object
-                greenPractices:
-                  type: array
-                  items:
-                    type: object
-                dataVerification:
-                  type: object
-                privacyPolicyUrl:
-                  type: string
-                poweredByLabel:
-                  type: string
+                  required: [designation, workModel, reportingYear, businessTravelEmissions, dailyCommuteEmissions, accommodationEmissions, remoteWorkEmissions, homeElectricityEmissions, deviceEnergyEmissions, totalUserEmissions, activityCount, lastCalculationDate, verificationStatus]
+                  properties:
+                    designation: { type: string }
+                    department: { type: string, nullable: true }
+                    workModel: { type: string }
+                    location: { type: string, nullable: true }
+                    reportingYear: { type: string }
+                    businessTravelEmissions: { type: number, minimum: 0 }
+                    dailyCommuteEmissions: { type: number, minimum: 0 }
+                    accommodationEmissions: { type: number, minimum: 0 }
+                    remoteWorkEmissions: { type: number, minimum: 0 }
+                    homeElectricityEmissions: { type: number, minimum: 0 }
+                    deviceEnergyEmissions: { type: number, minimum: 0 }
+                    totalUserEmissions: { type: number, minimum: 0 }
+                    activityCount: { type: integer, minimum: 0 }
+                    sustainabilityScore: { type: number, nullable: true, minimum: 0 }
+                    lastCalculationDate: { type: string, format: date }
+                    verificationStatus: { type: string }
       responses:
         '201':
-          description: Company DPP generated successfully
+          description: Digital Passport generated successfully
           content:
             application/json:
               schema:
@@ -314,26 +296,27 @@ paths:
         '400':
           description: Invalid request payload
         '401':
-          description: Unauthorized - invalid JWT company claims
+          description: Unauthorized - invalid JWT claims
+        '501':
+          description: Requested passport type is not implemented
 
-  /api/v1/company-dpp/meta:
+  /api/v1/dpp/meta:
     get:
       tags:
-        - Company DPP
-      summary: Get company DPP metadata
-      description: Returns active published DPP metadata for JWT company. Supports filtering by passportType and optional publicToken for a single row.
+        - Digital Passport
+      summary: Get Digital Passport metadata
+      description: Returns active published passport metadata for the JWT company. Supports filtering by required passportType and optional publicToken for a single row.
       security:
         - ApiKeyAuth: []
           BearerAuth: []
       parameters:
         - in: query
           name: passportType
-          required: false
+          required: true
           schema:
             type: string
             enum: [COMPANY, PRODUCT, USER]
-            default: COMPANY
-          description: Passport type filter. Defaults to COMPANY.
+          description: Required passport type filter.
         - in: query
           name: publicToken
           required: false
@@ -413,14 +396,14 @@ paths:
         '400':
           description: Invalid passportType value
         '404':
-          description: Company DPP not found for provided token
+          description: Digital Passport not found for provided token
 
-  /companydpp/{publicToken}:
+  /dpp/{publicToken}:
     get:
       tags:
-        - Company DPP Public
-      summary: Public Company DPP HTML
-      description: Public route that serves generated DPP HTML by token. Supports passportType filtering.
+        - Digital Passport Public
+      summary: Public Digital Passport HTML
+      description: Public route that serves generated DPP HTML by token and passport type.
       parameters:
         - in: path
           name: publicToken
@@ -429,12 +412,11 @@ paths:
             type: string
         - in: query
           name: passportType
-          required: false
+          required: true
           schema:
             type: string
             enum: [COMPANY, PRODUCT, USER]
-            default: COMPANY
-          description: Passport type filter. Defaults to COMPANY.
+          description: Required passport type filter.
       responses:
         '200':
           description: HTML content
@@ -445,4 +427,4 @@ paths:
         '400':
           description: Invalid passportType value
         '404':
-          description: Company DPP not found
+          description: Digital Passport not found

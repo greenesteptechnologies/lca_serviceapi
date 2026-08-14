@@ -100,7 +100,7 @@ app.use((req, res, next) => {
     req.path === "/" ||
     req.path === "/health" ||
     req.path.startsWith("/swagger") ||
-    req.path.startsWith("/companydpp")
+    req.path.startsWith("/dpp")
   ) {
     return next();
   }
@@ -135,8 +135,8 @@ app.get("/", (_req, res) => {
 });
 
 
-// Public company DPP HTML route
-app.get("/companydpp/:publicToken", serveCompanyDppHtml);
+// Public DPP HTML route
+app.get("/dpp/:publicToken", serveCompanyDppHtml);
 
 // Health Route
 app.get("/health", (_req, res) => {
@@ -151,7 +151,7 @@ app.get("/health", (_req, res) => {
 
 app.use("/api/v1/ai", aiRoutes);
 app.use("/api/v1/secrets", secretsRoutes);
-app.use("/api/v1/company-dpp", companyDppRoutes);
+app.use("/api/v1/dpp", companyDppRoutes);
 
 // GLOBAL ERROR HANDLER
 app.use(errorHandler);

@@ -1,5 +1,4 @@
 import fs from "fs/promises";
-import { existsSync } from "fs";
 import path from "path";
 import crypto from "crypto";
 import ejs from "ejs";
@@ -119,71 +118,53 @@ export interface CompanyDppGenerationRequest {
   createdByUserId?: number;
 }
 
+export interface UserDppTemplateData {
+  organizationLabel: string;
+  user: {
+    displayName: string;
+    designation: string;
+    department: string | null;
+    workModel: string;
+    location: string | null;
+  };
+  emissions: {
+    reportingYear: string;
+    businessTravel: number;
+    dailyCommute: number;
+    accommodation: number;
+    remoteWork: number;
+    homeElectricity: number;
+    deviceEnergy: number;
+    total: number;
+  };
+  activityCount: number;
+  sustainabilityScore: number | null;
+  lastCalculationDate: string;
+  verificationStatus: string;
+}
+
+export interface UserDppGenerationRequest {
+  companyId: number;
+  userId: number;
+  template: UserDppTemplateData;
+  publicBaseUrl?: string;
+}
+
 const COMPANY_DPP_TYPE = "COMPANY";
+const USER_DPP_TYPE = "USER";
+const TEMPLATE_ROOT = path.resolve(__dirname, "../templates");
+const DPP_TEMPLATE_FILES = {
+  COMPANY: path.join(TEMPLATE_ROOT, "company-dpp", "company-dpp-template.ejs"),
+  USER: path.join(TEMPLATE_ROOT, "user-dpp", "user-dpp-template.ejs"),
+  PRODUCT: path.join(TEMPLATE_ROOT, "product-dpp", "product-dpp-template.ejs"),
+} as const;
 
 function normalizeBaseUrl(rawUrl: string): string {
   return rawUrl.replace(/\/+$/, "");
 }
 
-function resolveTemplatePath(): string {
-  const templateRoots = [
-    ENV.DPP_TEMPLATE_ROOT?.trim() ? path.resolve(ENV.DPP_TEMPLATE_ROOT.trim()) : "",
-  ].filter(Boolean);
-
-  const candidates = [
-    ...templateRoots.map((root) =>
-      path.join(root, "company-dpp", "company-dpp-template.ejs"),
-    ),
-    ...templateRoots.map((root) =>
-      path.join(root, "company-dpp-template.ejs"),
-    ),
-    path.join(
-      process.cwd(),
-      "src",
-      "templates",
-      "company-dpp",
-      "company-dpp-template.ejs",
-    ),
-    path.join(
-      process.cwd(),
-      "templates",
-      "company-dpp",
-      "company-dpp-template.ejs",
-    ),
-    path.resolve(
-      __dirname,
-      "../templates/company-dpp/company-dpp-template.ejs",
-    ),
-    path.resolve(
-      __dirname,
-      "../../templates/company-dpp/company-dpp-template.ejs",
-    ),
-    path.resolve(
-      __dirname,
-      "../../src/templates/company-dpp/company-dpp-template.ejs",
-    ),
-  ].filter(Boolean);
-
-  const foundPath = candidates.find(existsSync);
-
-  if (!foundPath) {
-    throw new Error(
-      `Company DPP template not found. Checked: ${candidates.join(" | ")}`,
-    );
-  }
-
-  return foundPath;
-}
-
-let templatePathCache: string | null = null;
-
-function getTemplatePath(): string {
-  if (templatePathCache && existsSync(templatePathCache)) {
-    return templatePathCache;
-  }
-
-  templatePathCache = resolveTemplatePath();
-  return templatePathCache;
+function getTemplatePath(passportType: keyof typeof DPP_TEMPLATE_FILES): string {
+  return DPP_TEMPLATE_FILES[passportType];
 }
 
 function resolveStorageRoot(): string {
@@ -191,27 +172,35 @@ function resolveStorageRoot(): string {
     return path.resolve(ENV.DPP_STORAGE_ROOT.trim());
   }
 
-  return path.resolve(process.cwd(), "..", "dpp-storage", "company");
+  return path.resolve(process.cwd(), "..", "dpp-storage");
 }
 
-function getStorageRootCandidates(): string[] {
-  const roots = [
-    STORAGE_ROOT,
-    path.join(process.cwd(), "src", "templates", "storage", "dpp", "company"),
-    path.join(process.cwd(), "storage", "dpp", "company"),
-  ];
+const DPP_STORAGE_ROOT = resolveStorageRoot();
+const DPP_STORAGE_FOLDERS = {
+  COMPANY: path.join(DPP_STORAGE_ROOT, "company"),
+  USER: path.join(DPP_STORAGE_ROOT, "user"),
+} as const;
 
-  return Array.from(new Set(roots));
+function getDppPhysicalFilePath(
+  passportType: keyof typeof DPP_STORAGE_FOLDERS,
+  companyID: number,
+  publicToken: string,
+  htmlFileName: string,
+): string {
+  return path.join(
+    DPP_STORAGE_FOLDERS[passportType],
+    String(companyID),
+    publicToken,
+    htmlFileName,
+  );
 }
-
-const STORAGE_ROOT = resolveStorageRoot();
 
 export function getCompanyDppPhysicalFilePath(
   companyID: number,
   publicToken: string,
   htmlFileName: string,
 ): string {
-  return path.join(STORAGE_ROOT, String(companyID), publicToken, htmlFileName);
+  return getDppPhysicalFilePath("COMPANY", companyID, publicToken, htmlFileName);
 }
 
 export function resolveCompanyDppPhysicalFilePath(
@@ -219,13 +208,15 @@ export function resolveCompanyDppPhysicalFilePath(
   publicToken: string,
   htmlFileName: string,
 ): string {
-  const candidates = getStorageRootCandidates().map((root) =>
-    path.join(root, String(companyID), publicToken, htmlFileName)
-  );
+  return getCompanyDppPhysicalFilePath(companyID, publicToken, htmlFileName);
+}
 
-  const existingPath = candidates.find(existsSync);
-
-  return existingPath || candidates[0];
+export function resolveUserDppPhysicalFilePath(
+  companyID: number,
+  publicToken: string,
+  htmlFileName: string,
+): string {
+  return getDppPhysicalFilePath("USER", companyID, publicToken, htmlFileName);
 }
 
 function generatePublicToken(length: number = 8): string {
@@ -301,16 +292,16 @@ export async function generateCompanyDpp(
       publicBaseUrl?.trim() ||
       "http://localhost:5000";
 
-    const publishedHTMLURL = `${normalizeBaseUrl(baseUrlSource)}/companydpp/${publicToken}`;
+    const publishedHTMLURL = `${normalizeBaseUrl(baseUrlSource)}/dpp/${publicToken}?passportType=${COMPANY_DPP_TYPE}`;
 
     const templateData = template;
 
     // Render EJS
-    const html = await ejs.renderFile(getTemplatePath(), templateData);
+    const html = await ejs.renderFile(getTemplatePath(COMPANY_DPP_TYPE), templateData);
 
     // Directory
     const dppDirectory = path.join(
-      STORAGE_ROOT,
+      DPP_STORAGE_FOLDERS.COMPANY,
       String(companyID),
       publicToken,
     );
@@ -412,6 +403,69 @@ export async function generateCompanyDpp(
 
       physicalFilePath,
     };
+  } catch (error) {
+    if (transactionBegun) {
+      await transaction.rollback();
+    }
+
+    throw error;
+  }
+}
+
+export async function generateUserDpp(
+  data: UserDppGenerationRequest,
+): Promise<CompanyDppResult> {
+  const { companyId, userId, template, publicBaseUrl } = data;
+  const pool = await getPool();
+  const transaction = new sql.Transaction(pool);
+  let transactionBegun = false;
+
+  try {
+    await transaction.begin(sql.ISOLATION_LEVEL.SERIALIZABLE);
+    transactionBegun = true;
+
+    const passportGUID = crypto.randomUUID();
+    const publicToken = generatePublicToken(8);
+    const passportVersion = await getNextPassportVersion(transaction, companyId);
+    const baseUrlSource = ENV.PUBLIC_BASE_URL?.trim() || publicBaseUrl?.trim() || "" ;
+    const publishedHTMLURL = `${normalizeBaseUrl(baseUrlSource)}/dpp/${publicToken}?passportType=${USER_DPP_TYPE}`;
+    const html = await ejs.renderFile(getTemplatePath(USER_DPP_TYPE), template);
+    const dppDirectory = path.join(
+      DPP_STORAGE_FOLDERS.USER,
+      String(companyId),
+      publicToken,
+    );
+    const htmlFileName = `user_${companyId}_${publicToken}.html`;
+    const physicalFilePath = path.join(dppDirectory, htmlFileName);
+    const htmlFilePath = `/dpp/user/${companyId}/${publicToken}/${htmlFileName}`;
+
+    await fs.mkdir(dppDirectory, { recursive: true });
+    await fs.writeFile(physicalFilePath, html, "utf8");
+
+    await new sql.Request(transaction)
+      .input("CompanyID", sql.Int, companyId)
+      .input("PassportGUID", sql.NVarChar(100), passportGUID)
+      .input("PassportVersion", sql.Int, passportVersion)
+      .input("PassportType", sql.NVarChar(20), USER_DPP_TYPE)
+      .input("HTMLFileName", sql.NVarChar(200), htmlFileName)
+      .input("HTMLFilePath", sql.NVarChar(500), htmlFilePath)
+      .input("PublishedHTMLURL", sql.NVarChar(500), publishedHTMLURL)
+      .input("PublicToken", sql.NVarChar(100), publicToken)
+      .input("CreatedBy", sql.Int, userId)
+      .input("ModifiedBy", sql.Int, userId)
+      .input("ExtNote1", sql.NVarChar(sql.MAX), JSON.stringify({ userId }))
+      .input("ExtNote2", sql.NVarChar(sql.MAX), JSON.stringify({ template }))
+      .query(`
+        INSERT INTO lca_master.gs_CompanyDigitalPassport
+        (CompanyID, PassportGUID, PassportVersion, PassportType, HTMLFileName, HTMLFilePath, PublishedHTMLURL, IsPublished, PublishedOn, CreatedOn, ModifiedOn, CreatedBy, ModifiedBy, IsActive, PublicToken, ExtNote1, ExtNote2)
+        VALUES
+        (@CompanyID, @PassportGUID, @PassportVersion, @PassportType, @HTMLFileName, @HTMLFilePath, @PublishedHTMLURL, 1, GETDATE(), GETDATE(), GETDATE(), @CreatedBy, @ModifiedBy, 1, @PublicToken, @ExtNote1, @ExtNote2)
+      `);
+
+    await transaction.commit();
+    transactionBegun = false;
+
+    return { passportGUID, publicToken, passportVersion, htmlFileName, htmlFilePath, publishedHTMLURL, physicalFilePath };
   } catch (error) {
     if (transactionBegun) {
       await transaction.rollback();
