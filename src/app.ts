@@ -13,6 +13,7 @@ import aiRoutes from "./routes/ai.routes";
 import secretsRoutes from "./routes/secrets.routes";
 import companyDppRoutes from "./routes/companyDpp.routes";
 import { serveCompanyDppHtml } from "./controllers/companyDpp.controller";
+import alertRoutes from "./routes/alert.routes";
 
 import { swaggerServe, swaggerSetup } from "./config/swagger";
 
@@ -152,6 +153,7 @@ app.get("/health", (_req, res) => {
 app.use("/api/v1/ai", aiRoutes);
 app.use("/api/v1/secrets", secretsRoutes);
 app.use("/api/v1/dpp", companyDppRoutes);
+app.use("/api/v1/alerts", alertRoutes);
 
 // GLOBAL ERROR HANDLER
 app.use(errorHandler);
