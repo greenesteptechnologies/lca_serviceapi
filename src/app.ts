@@ -1,6 +1,7 @@
 import express from "express";
 import helmet from "helmet";
 import cors from "cors";
+import cookieParser from "cookie-parser";
 import morgan from "morgan";
 
 import { ENV } from "./config/env";
@@ -24,6 +25,7 @@ app.use(helmet());
 
 // REQUEST PARSER
 app.use(express.json());
+app.use(cookieParser());
 
 // REQUEST CONTEXT / CORRELATION ID
 app.use(requestMiddleware);
