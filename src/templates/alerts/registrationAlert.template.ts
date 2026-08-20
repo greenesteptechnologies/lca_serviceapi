@@ -35,6 +35,7 @@ export function buildRegistrationAlertEmail(data: RegistrationAlertData) {
     ["Industry", data.industry],
     ["Registration Status", data.registrationStatus],
     ["Registered At", formatRegistrationTime(data.registeredAt)],
+    ["Host Name", data.hostName],
     ["Correlation ID", data.correlationId],
   ];
 

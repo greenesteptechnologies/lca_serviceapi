@@ -15,7 +15,7 @@ export async function loginAlert(req: Request, res: Response) {
       payload: req.body,
     });
 
-    const { email, userId, companyId, userName, companyName, correlationId } =
+    const { email, userId, companyId, userName, companyName, hostName, correlationId } =
       req.body;
 
     if (!email) {
@@ -31,6 +31,7 @@ export async function loginAlert(req: Request, res: Response) {
       companyId,
       userName,
       companyName,
+      hostName,
       correlationId,
     });
 
@@ -60,7 +61,7 @@ export async function onboardingAlert(req: Request, res: Response) {
 
     const {
       email, userName, userId, companyName, companyId, role, phoneNumber,
-      companyType, industry, registrationStatus, registeredAt, correlationId,
+      companyType, industry, registrationStatus, registeredAt, hostName, correlationId,
     } = req.body;
     if (!email) {
       return res.status(400).json({
@@ -81,6 +82,7 @@ export async function onboardingAlert(req: Request, res: Response) {
       industry,
       registrationStatus,
       registeredAt,
+      hostName,
       correlationId,
     });
 

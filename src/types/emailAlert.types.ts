@@ -4,6 +4,7 @@ export interface LoginAlertData {
   companyId?: string | number;
   userName?: string;
   companyName?: string;
+  hostName?: string;
   correlationId?: string;
 }
 
@@ -19,5 +20,6 @@ export interface RegistrationAlertData {
   industry?: string;
   registrationStatus?: string;
   registeredAt?: string;
+  hostName?: string;
   correlationId?: string;
 }
