@@ -19,6 +19,7 @@ User Name: ${data.userName ?? "N/A"}
 User ID: ${data.userId ?? "N/A"}
 Company Name: ${data.companyName ?? "N/A"}
 Company ID: ${data.companyId ?? "N/A"}
+Host Name: ${data.hostName ?? "N/A"}
 Correlation ID: ${data.correlationId ?? "N/A"}
 Login Time: ${loginTime} (IST)
 
@@ -96,6 +97,10 @@ If you don't recognize this activity, please contact your administrator or reset
                   <tr>
                     <td style="padding:14px 16px; background-color:#f9fafb; border-bottom:1px solid #e5e9ee; font-size:13px; color:#5f6b7a;">Company ID</td>
                     <td style="padding:14px 16px; background-color:#f9fafb; border-bottom:1px solid #e5e9ee; font-size:13px; color:#0f2540; font-weight:600;">${data.companyId ?? "N/A"}</td>
+                  </tr>
+                  <tr>
+                    <td style="padding:14px 16px; border-bottom:1px solid #e5e9ee; font-size:13px; color:#5f6b7a;">Host Name</td>
+                    <td style="padding:14px 16px; border-bottom:1px solid #e5e9ee; font-size:13px; color:#0f2540; font-weight:600;">${data.hostName ?? "N/A"}</td>
                   </tr>
                   <tr>
                     <td style="padding:14px 16px; border-bottom:1px solid #e5e9ee; font-size:13px; color:#5f6b7a;">Correlation ID</td>
