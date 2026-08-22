@@ -14,7 +14,7 @@ import { globalRateLimiter } from "./middlewares/rateLimit.middleware";
 import aiRoutes from "./routes/ai.routes";
 import secretsRoutes from "./routes/secrets.routes";
 import companyDppRoutes from "./routes/companyDpp.routes";
-import { serveCompanyDppHtml } from "./controllers/companyDpp.controller";
+import { serveCompanyDppHtml } from "./controllers/dpp.controller";
 import alertRoutes from "./routes/alert.routes";
 
 import { swaggerServe, swaggerSetup } from "./config/swagger";
