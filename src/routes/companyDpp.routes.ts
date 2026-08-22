@@ -5,11 +5,12 @@ import {
   getCompanyDppMeta,
 } from "../controllers/companyDpp.controller";
 import { verifyJWT } from "../middlewares/jwt.middleware";
+import { authenticatedRateLimiter } from "../middlewares/rateLimit.middleware";
 
 const router = Router();
 
-router.post("/generate", verifyJWT, generateDpp);
+router.post("/generate", verifyJWT, authenticatedRateLimiter, generateDpp);
 
-router.get("/meta", verifyJWT, getCompanyDppMeta);
+router.get("/meta", verifyJWT, authenticatedRateLimiter, getCompanyDppMeta);
 
 export default router;

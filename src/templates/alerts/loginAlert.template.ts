@@ -1,5 +1,13 @@
 import { LoginAlertData } from "../../types/emailAlert.types";
 
+const escapeHtml = (value: unknown) =>
+  String(value ?? "N/A")
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;")
+    .replace(/'/g, "&#039;");
+
 export function buildLoginAlertEmail(data: LoginAlertData) {
   const loginTime = new Date().toLocaleString("en-IN", {
     dateStyle: "medium",
@@ -8,6 +16,14 @@ export function buildLoginAlertEmail(data: LoginAlertData) {
   });
 
   const subject = `🔐 New Login Alert - ${data.email}`;
+
+  const safeEmail = escapeHtml(data.email);
+  const safeUserName = escapeHtml(data.userName);
+  const safeUserId = escapeHtml(data.userId);
+  const safeCompanyName = escapeHtml(data.companyName);
+  const safeCompanyId = escapeHtml(data.companyId);
+  const safeHostName = escapeHtml(data.hostName);
+  const safeCorrelationId = escapeHtml(data.correlationId);
 
   const text = `
 JIVA Digital LCSA Security Alert — New Login Detected
@@ -80,31 +96,31 @@ If you don't recognize this activity, please contact your administrator or reset
                 <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="border:1px solid #e5e9ee; border-radius:6px; overflow:hidden;">
                   <tr>
                     <td style="padding:14px 16px; background-color:#f9fafb; border-bottom:1px solid #e5e9ee; font-size:13px; color:#5f6b7a; width:40%;">User Email</td>
-                    <td style="padding:14px 16px; background-color:#f9fafb; border-bottom:1px solid #e5e9ee; font-size:13px; color:#0f2540; font-weight:600;">${data.email}</td>
+                    <td style="padding:14px 16px; background-color:#f9fafb; border-bottom:1px solid #e5e9ee; font-size:13px; color:#0f2540; font-weight:600;">${safeEmail}</td>
                   </tr>
                   <tr>
                     <td style="padding:14px 16px; border-bottom:1px solid #e5e9ee; font-size:13px; color:#5f6b7a;">User Name</td>
-                    <td style="padding:14px 16px; border-bottom:1px solid #e5e9ee; font-size:13px; color:#0f2540; font-weight:600;">${data.userName ?? "N/A"}</td>
+                    <td style="padding:14px 16px; border-bottom:1px solid #e5e9ee; font-size:13px; color:#0f2540; font-weight:600;">${safeUserName}</td>
                   </tr>
                   <tr>
                     <td style="padding:14px 16px; border-bottom:1px solid #e5e9ee; font-size:13px; color:#5f6b7a;">User ID</td>
-                    <td style="padding:14px 16px; border-bottom:1px solid #e5e9ee; font-size:13px; color:#0f2540; font-weight:600;">${data.userId ?? "N/A"}</td>
+                    <td style="padding:14px 16px; border-bottom:1px solid #e5e9ee; font-size:13px; color:#0f2540; font-weight:600;">${safeUserId}</td>
                   </tr>
                   <tr>
                     <td style="padding:14px 16px; background-color:#f9fafb; border-bottom:1px solid #e5e9ee; font-size:13px; color:#5f6b7a;">Company Name</td>
-                    <td style="padding:14px 16px; background-color:#f9fafb; border-bottom:1px solid #e5e9ee; font-size:13px; color:#0f2540; font-weight:600;">${data.companyName ?? "N/A"}</td>
+                    <td style="padding:14px 16px; background-color:#f9fafb; border-bottom:1px solid #e5e9ee; font-size:13px; color:#0f2540; font-weight:600;">${safeCompanyName}</td>
                   </tr>
                   <tr>
                     <td style="padding:14px 16px; background-color:#f9fafb; border-bottom:1px solid #e5e9ee; font-size:13px; color:#5f6b7a;">Company ID</td>
-                    <td style="padding:14px 16px; background-color:#f9fafb; border-bottom:1px solid #e5e9ee; font-size:13px; color:#0f2540; font-weight:600;">${data.companyId ?? "N/A"}</td>
+                    <td style="padding:14px 16px; background-color:#f9fafb; border-bottom:1px solid #e5e9ee; font-size:13px; color:#0f2540; font-weight:600;">${safeCompanyId}</td>
                   </tr>
                   <tr>
                     <td style="padding:14px 16px; border-bottom:1px solid #e5e9ee; font-size:13px; color:#5f6b7a;">Host Name</td>
-                    <td style="padding:14px 16px; border-bottom:1px solid #e5e9ee; font-size:13px; color:#0f2540; font-weight:600;">${data.hostName ?? "N/A"}</td>
+                    <td style="padding:14px 16px; border-bottom:1px solid #e5e9ee; font-size:13px; color:#0f2540; font-weight:600;">${safeHostName}</td>
                   </tr>
                   <tr>
                     <td style="padding:14px 16px; border-bottom:1px solid #e5e9ee; font-size:13px; color:#5f6b7a;">Correlation ID</td>
-                    <td style="padding:14px 16px; border-bottom:1px solid #e5e9ee; font-size:13px; color:#0f2540; font-weight:600; font-family:'Courier New', monospace;">${data.correlationId ?? "N/A"}</td>
+                    <td style="padding:14px 16px; border-bottom:1px solid #e5e9ee; font-size:13px; color:#0f2540; font-weight:600; font-family:'Courier New', monospace;">${safeCorrelationId}</td>
                   </tr>
                   <tr>
                     <td style="padding:14px 16px; background-color:#f9fafb; font-size:13px; color:#5f6b7a;">Login Time</td>
