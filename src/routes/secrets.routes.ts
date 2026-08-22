@@ -4,10 +4,11 @@ import {
 	getSystemSecret,
 } from "../controllers/secrets.controller";
 import { verifyJWT } from "../middlewares/jwt.middleware";
+import { authenticatedRateLimiter } from "../middlewares/rateLimit.middleware";
 
 const router = Router();
 
-router.get("/system-secret/:secretName", getSystemSecret);
-router.get("/llm-models", verifyJWT, getLLMModels);
+router.get("/system-secret/:secretName",verifyJWT,authenticatedRateLimiter, getSystemSecret);
+router.get("/llm-models", verifyJWT, authenticatedRateLimiter, getLLMModels);
 
 export default router;

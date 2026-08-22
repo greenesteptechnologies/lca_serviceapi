@@ -9,6 +9,7 @@ import { logger } from "./config/logger";
 
 import { requestMiddleware } from "./middlewares/request.middleware";
 import { errorHandler } from "./middlewares/error.middleware";
+import { globalRateLimiter } from "./middlewares/rateLimit.middleware";
 
 import aiRoutes from "./routes/ai.routes";
 import secretsRoutes from "./routes/secrets.routes";
@@ -24,7 +25,7 @@ const app = express();
 app.use(helmet());
 
 // REQUEST PARSER
-app.use(express.json());
+app.use(express.json({ limit: "20kb" }));
 app.use(cookieParser());
 
 // REQUEST CONTEXT / CORRELATION ID
@@ -70,13 +71,16 @@ app.use(
     allowedHeaders: [
       "Content-Type",
       "Authorization",
-      "x-api-key",
+      // "x-api-key", // Disabled: browser clients must not send shared API keys.
       "x-correlation-id",
     ],
 
     optionsSuccessStatus: 200,
   }),
 );
+
+// Apply a baseline request limit before authentication and route handling.
+app.use(globalRateLimiter);
 
 // REQUEST LOGGING
 morgan.token("correlation-id", (req: any) => req.correlationId);
@@ -94,8 +98,10 @@ app.use(
   ),
 );
 
-// GLOBAL API KEY MIDDLEWARE
-
+/*
+// GLOBAL API KEY MIDDLEWARE (DISABLED)
+// Do not enable this for browser/UI requests: a shared key is visible in
+// DevTools and can be replayed by any user who obtains it.
 app.use((req, res, next) => {
   // Public routes
   if (
@@ -103,7 +109,11 @@ app.use((req, res, next) => {
     req.path === "/" ||
     req.path === "/health" ||
     req.path.startsWith("/swagger") ||
-    req.path.startsWith("/dpp")
+    req.path.startsWith("/dpp") ||
+    // Alert routes authenticate the caller with verifyJWT in alert.routes.ts.
+    // Do not require the shared API key here because it must never be exposed
+    // to a browser client.
+    req.path.startsWith("/api/v1/alerts")
   ) {
     return next();
   }
@@ -128,6 +138,7 @@ app.use((req, res, next) => {
 
   next();
 });
+*/
 
 // SWAGGER
 app.use("/swagger", swaggerServe, swaggerSetup);
@@ -138,7 +149,7 @@ app.get("/", (_req, res) => {
 });
 
 
-// Public DPP HTML route
+// Public route
 app.get("/dpp/:publicToken", serveCompanyDppHtml);
 
 // Health Route
