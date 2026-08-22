@@ -168,11 +168,15 @@ function getTemplatePath(passportType: keyof typeof DPP_TEMPLATE_FILES): string 
 }
 
 function resolveStorageRoot(): string {
-  if (ENV.DPP_STORAGE_ROOT?.trim()) {
-    return path.resolve(ENV.DPP_STORAGE_ROOT.trim());
+  const storageRoot = ENV.DPP_STORAGE_ROOT?.trim();
+
+  if (!storageRoot) {
+    throw new Error(
+      "DPP_STORAGE_ROOT environment variable is required but not configured.",
+    );
   }
 
-  return path.resolve(process.cwd(), "..", "dpp-storage");
+  return path.resolve(storageRoot);
 }
 
 const DPP_STORAGE_ROOT = resolveStorageRoot();

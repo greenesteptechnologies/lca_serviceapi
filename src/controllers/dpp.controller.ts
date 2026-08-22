@@ -9,7 +9,7 @@ import {
   resolveCompanyDppPhysicalFilePath,
   resolveUserDppPhysicalFilePath,
   UserDppTemplateData,
-} from "../services/companyDpp.service";
+} from "../services/dpp.service";
 import sql, { getPool } from "../config/db";
 import { errorResponse } from "../utils/response";
 import {

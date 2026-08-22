@@ -3,7 +3,7 @@ import { Router } from "express";
 import {
   generateDpp,
   getCompanyDppMeta,
-} from "../controllers/companyDpp.controller";
+} from "../controllers/dpp.controller";
 import { verifyJWT } from "../middlewares/jwt.middleware";
 import { authenticatedRateLimiter } from "../middlewares/rateLimit.middleware";
 
