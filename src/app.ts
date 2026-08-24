@@ -13,7 +13,7 @@ import { globalRateLimiter } from "./middlewares/rateLimit.middleware";
 
 import aiRoutes from "./routes/ai.routes";
 import secretsRoutes from "./routes/secrets.routes";
-import companyDppRoutes from "./routes/companyDpp.routes";
+import companyDppRoutes from "./routes/dpp.routes";
 import { serveCompanyDppHtml } from "./controllers/dpp.controller";
 import alertRoutes from "./routes/alert.routes";
 

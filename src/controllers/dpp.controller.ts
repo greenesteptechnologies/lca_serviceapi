@@ -9,6 +9,10 @@ import {
   resolveCompanyDppPhysicalFilePath,
   resolveUserDppPhysicalFilePath,
   UserDppTemplateData,
+  DelegateDppGenerationRequest,
+  generateDelegateDpp,
+  DelegateDppTemplateData,
+  resolveDelegateDppPhysicalFilePath,
 } from "../services/dpp.service";
 import sql, { getPool } from "../config/db";
 import { errorResponse } from "../utils/response";
@@ -59,9 +63,11 @@ interface UserDppGenerateBody {
   verificationStatus?: string;
 }
 
-type PassportType = "COMPANY" | "PRODUCT" | "USER";
+type DelegateDppGenerateBody = Partial<DelegateDppTemplateData>;
 
-const ALLOWED_PASSPORT_TYPES: PassportType[] = ["COMPANY", "PRODUCT", "USER"];
+type PassportType = "COMPANY" | "PRODUCT" | "USER" | "DELEGATE";
+
+const ALLOWED_PASSPORT_TYPES: PassportType[] = ["COMPANY", "PRODUCT", "USER", "DELEGATE"];
 
 function isMissing(value: unknown): boolean {
   return value === undefined || value === null || value === "";
@@ -253,6 +259,62 @@ function buildUserGenerationRequest(
   };
 }
 
+function buildDelegateGenerationRequest(
+  body: DelegateDppGenerateBody,
+  user: any,
+): Omit<DelegateDppGenerationRequest, "publicBaseUrl"> {
+  const companyId = Number(user?.CompanyId);
+  const delegateId = Number(user?.DelegateId ?? user?.DelegateID ?? user?.UserId);
+
+  if (!Number.isInteger(companyId) || companyId <= 0 || !Number.isInteger(delegateId) || delegateId <= 0) {
+    const error = validationError("Invalid or missing CompanyId or delegate identity in token");
+    error.status = 401;
+    throw error;
+  }
+
+  if (!body.event) throw validationError("event section is required", "event");
+  if (!body.delegate) throw validationError("delegate section is required", "delegate");
+  if (!body.footprint) throw validationError("footprint section is required", "footprint");
+
+  if (isMissing(body.event.name)) throw validationError("event.name is required", "event.name");
+  if (isMissing(body.event.year)) throw validationError("event.year is required", "event.year");
+  if (isMissing(body.delegate.jobTitle)) throw validationError("delegate.jobTitle is required", "delegate.jobTitle");
+  if (!Number.isFinite(Number(body.footprint.total)) || Number(body.footprint.total) < 0) {
+    throw validationError("footprint.total must be a non-negative number", "footprint.total");
+  }
+
+  return {
+    companyId,
+    delegateId,
+
+    template: {
+      event: body.event,
+      delegate: {
+        ...body.delegate,
+        fullName: String(body.delegate.fullName || resolveUserDisplayName(user, delegateId)).trim(),
+        company: String(body.delegate.company || resolveOrganizationLabel(user, companyId)).trim(),
+      },
+      qr: body.qr || {},
+      agenda: body.agenda || [],
+      footprint: {
+        ...body.footprint,
+        total: Number(body.footprint.total),
+        segments: body.footprint.segments || [],
+      },
+      credentials: body.credentials || [],
+      verification: body.verification || {},
+      eventStats: body.eventStats,
+      eventBreakdown: body.eventBreakdown || [],
+      eventTravelByMode: body.eventTravelByMode || [],
+      eventSustainabilityActions: body.eventSustainabilityActions || [],
+      eventOffset: body.eventOffset,
+      eventCertifications: body.eventCertifications || [],
+      branding: body.branding,
+      flags: body.flags,
+    },
+  };
+}
+
 function resolveRequestBaseUrl(req: Request): string {
   const forwardedProto = String(req.headers["x-forwarded-proto"] || "")
     .split(",")[0]
@@ -290,7 +352,7 @@ export async function generateDpp(
     const passportType = resolvePassportType(req.query.passportType);
 
     if (!passportType) {
-      throw validationError("passportType must be one of COMPANY, PRODUCT, USER", "passportType");
+      throw validationError("passportType must be one of COMPANY, PRODUCT, USER, DELEGATE", "passportType");
     }
 
     if (passportType === "COMPANY") {
@@ -342,6 +404,21 @@ export async function generateDpp(
       throw error;
     }
 
+    if (passportType === "DELEGATE") {
+      const payload = buildDelegateGenerationRequest(req.body as DelegateDppGenerateBody, req.user);
+
+      const result = await generateDelegateDpp({
+        ...payload,
+        publicBaseUrl: resolveRequestBaseUrl(req),
+      });
+
+      return res.status(201).json({
+        success: true,
+        message: "Delegate Digital Passport generated successfully",
+        data: result,
+      });
+    }
+
     throw validationError("Unsupported passportType", "passportType");
 
   } catch (error: any) {
@@ -384,7 +461,7 @@ export async function getCompanyDppMeta(
     if (!passportType) {
       return res.status(400).json({
         success: false,
-        message: "passportType must be one of COMPANY, PRODUCT, USER",
+        message: "passportType must be one of COMPANY, PRODUCT, USER, DELEGATE",
       });
     }
 
@@ -475,7 +552,7 @@ export async function serveCompanyDppHtml(
     if (!passportType) {
       return res
         .status(400)
-        .send("passportType must be one of COMPANY, PRODUCT, USER");
+        .send("passportType must be one of COMPANY, PRODUCT, USER, DELEGATE");
     }
 
     const pool = await getPool();
@@ -490,17 +567,16 @@ export async function serveCompanyDppHtml(
     }
 
     const row = result.recordset[0];
+    const pathArguments: [number, string, string] = [
+      Number(row.companyId),
+      String(row.publicToken),
+      String(row.htmlFileName || "index.html"),
+    ];
     const physicalFilePath = passportType === "USER"
-      ? resolveUserDppPhysicalFilePath(
-        Number(row.companyId),
-        String(row.publicToken),
-        String(row.htmlFileName || "index.html"),
-      )
-      : resolveCompanyDppPhysicalFilePath(
-        Number(row.companyId),
-        String(row.publicToken),
-        String(row.htmlFileName || "index.html"),
-      );
+      ? resolveUserDppPhysicalFilePath(...pathArguments)
+      : passportType === "DELEGATE"
+        ? resolveDelegateDppPhysicalFilePath(...pathArguments)
+        : resolveCompanyDppPhysicalFilePath(...pathArguments);
 
     const html = await fs.readFile(physicalFilePath, "utf8");
     res.setHeader("Content-Type", "text/html; charset=utf-8");
