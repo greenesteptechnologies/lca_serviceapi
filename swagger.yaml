@@ -201,7 +201,7 @@ paths:
       tags:
         - Digital Passport
       summary: Generate a Digital Passport
-      description: Generates a passport selected by the required passportType. Company and User identity are derived from JWT claims.
+      description: Generates a passport selected by the required passportType. Company, User, and Delegate identity are derived from JWT claims.
       security:
         - ApiKeyAuth: []
           BearerAuth: []
@@ -211,7 +211,7 @@ paths:
           required: true
           schema:
             type: string
-            enum: [COMPANY, USER, PRODUCT]
+            enum: [COMPANY, USER, DELEGATE, PRODUCT]
           description: Passport type. PRODUCT currently returns 501 until its template is implemented.
       requestBody:
         required: true
@@ -264,6 +264,129 @@ paths:
                     sustainabilityScore: { type: number, nullable: true, minimum: 0 }
                     lastCalculationDate: { type: string, format: date }
                     verificationStatus: { type: string }
+                - title: Delegate DPP payload
+                  type: object
+                  required: [event, delegate, footprint]
+                  properties:
+                    event:
+                      type: object
+                      required: [name, year]
+                      properties:
+                        name: { type: string }
+                        year: { oneOf: [{ type: string }, { type: number }] }
+                        id: { type: string }
+                        dates: { type: string }
+                        venue: { type: string }
+                        city: { type: string }
+                        verified: { type: boolean }
+                        myPassportUrl: { type: string, format: uri }
+                        logoUrl: { type: string, format: uri }
+                    delegate:
+                      type: object
+                      required: [jobTitle]
+                      properties:
+                        fullName: { type: string, description: Defaults to the JWT user name. }
+                        jobTitle: { type: string }
+                        company: { type: string, description: Defaults to the JWT company name. }
+                        passType: { type: string }
+                        photoUrl: { type: string, format: uri }
+                        idNumber: { type: string }
+                    qr:
+                      type: object
+                      properties:
+                        imageUrl: { type: string, format: uri }
+                        label: { type: string }
+                        sublabel: { type: string }
+                    agenda:
+                      type: array
+                      items:
+                        type: object
+                        required: [time, title, location]
+                        properties:
+                          time: { type: string }
+                          title: { type: string }
+                          location: { type: string }
+                    footprint:
+                      type: object
+                      required: [total]
+                      properties:
+                        total: { type: number, minimum: 0 }
+                        unit: { type: string }
+                        offsetLabel: { type: string }
+                        segments:
+                          type: array
+                          items:
+                            type: object
+                            required: [label, value, percent]
+                            properties:
+                              label: { type: string }
+                              value: { oneOf: [{ type: string }, { type: number }] }
+                              percent: { type: number, minimum: 0, maximum: 100 }
+                    credentials:
+                      type: array
+                      items:
+                        type: object
+                        required: [title, subtitle]
+                        properties:
+                          title: { type: string }
+                          subtitle: { type: string }
+                          verified: { type: boolean }
+                    verification:
+                      type: object
+                      properties:
+                        credentialType: { type: string }
+                        issuerDid: { type: string }
+                        revocable: { type: boolean }
+                        active: { type: boolean }
+                        shareContactCard: { type: boolean }
+                        sealImageUrl: { type: string, format: uri }
+                    eventStats:
+                      type: object
+                      properties:
+                        totalFootprint: { type: number }
+                        unit: { type: string }
+                        perDelegate: { type: number }
+                        delegates: { type: number }
+                        offsetPercent: { type: number }
+                    eventBreakdown:
+                      type: array
+                      items:
+                        type: object
+                        properties: { label: { type: string }, percent: { type: number } }
+                    eventTravelByMode:
+                      type: array
+                      items:
+                        type: object
+                        properties: { mode: { type: string }, percent: { type: number } }
+                    eventSustainabilityActions:
+                      type: array
+                      items:
+                        type: object
+                        properties:
+                          label: { type: string }
+                          value: { oneOf: [{ type: string }, { type: number }] }
+                    eventOffset:
+                      type: object
+                      properties:
+                        residualEmissions: { type: number }
+                        unit: { type: string }
+                        offsetPurchased: { type: number }
+                        offsetLabel: { type: string }
+                        net: { oneOf: [{ type: string }, { type: number }] }
+                        registry: { type: string }
+                        projectId: { type: string }
+                        vintage: { oneOf: [{ type: string }, { type: number }] }
+                    eventCertifications:
+                      type: array
+                      items: { type: string }
+                    branding:
+                      type: object
+                      properties:
+                        primary: { type: string, example: '#0B2545' }
+                        accent: { type: string, example: '#14B8A6' }
+                    flags:
+                      type: object
+                      additionalProperties: { type: boolean }
       responses:
         '201':
           description: Digital Passport generated successfully
@@ -315,7 +438,7 @@ paths:
           required: true
           schema:
             type: string
-            enum: [COMPANY, PRODUCT, USER]
+            enum: [COMPANY, PRODUCT, USER, DELEGATE]
           description: Required passport type filter.
         - in: query
           name: publicToken
@@ -349,7 +472,7 @@ paths:
                               type: string
                             passportType:
                               type: string
-                              enum: [COMPANY, PRODUCT, USER]
+                              enum: [COMPANY, PRODUCT, USER, DELEGATE]
                             passportVersion:
                               type: integer
                             htmlFileName:
@@ -375,7 +498,7 @@ paths:
                             type: string
                           passportType:
                             type: string
-                            enum: [COMPANY, PRODUCT, USER]
+                            enum: [COMPANY, PRODUCT, USER, DELEGATE]
                           passportVersion:
                             type: integer
                           htmlFileName:
@@ -415,7 +538,7 @@ paths:
           required: true
           schema:
             type: string
-            enum: [COMPANY, PRODUCT, USER]
+            enum: [COMPANY, PRODUCT, USER, DELEGATE]
           description: Required passport type filter.
       responses:
         '200':

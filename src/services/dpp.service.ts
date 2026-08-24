@@ -150,12 +150,94 @@ export interface UserDppGenerationRequest {
   publicBaseUrl?: string;
 }
 
+export interface DelegateDppTemplateData {
+  event: {
+    name: string;
+    year: string | number;
+    id?: string;
+    dates?: string;
+    venue?: string;
+    city?: string;
+    verified?: boolean;
+    myPassportUrl?: string;
+    logoUrl?: string;
+  };
+  delegate: {
+    fullName: string;
+    jobTitle: string;
+    company: string;
+    passType?: string;
+    photoUrl?: string;
+    idNumber?: string;
+  };
+  qr: { imageUrl?: string; label?: string; sublabel?: string };
+  agenda: Array<{ time: string; title: string; location: string }>;
+  footprint: {
+    total: number;
+    unit?: string;
+    offsetLabel?: string;
+    segments: Array<{ label: string; value: string | number; percent: number }>;
+  };
+  credentials: Array<{ title: string; subtitle: string; verified?: boolean }>;
+  verification: {
+    credentialType?: string;
+    issuerDid?: string;
+    revocable?: boolean;
+    active?: boolean;
+    shareContactCard?: boolean;
+    sealImageUrl?: string;
+  };
+  eventStats?: {
+    totalFootprint?: number;
+    unit?: string;
+    perDelegate?: number;
+    delegates?: number;
+    offsetPercent?: number;
+  };
+  eventBreakdown?: Array<{ label: string; percent: number }>;
+  eventTravelByMode?: Array<{ mode: string; percent: number }>;
+  eventSustainabilityActions?: Array<{ label: string; value: string | number }>;
+  eventOffset?: {
+    residualEmissions?: number;
+    unit?: string;
+    offsetPurchased?: number;
+    offsetLabel?: string;
+    net?: string | number;
+    registry?: string;
+    projectId?: string;
+    vintage?: string | number;
+  };
+  eventCertifications?: string[];
+  branding?: { primary?: string; accent?: string };
+  flags?: {
+    showAgenda?: boolean;
+    showFootprint?: boolean;
+    showCredentials?: boolean;
+    showVerification?: boolean;
+    showEventPassport?: boolean;
+    showEventBreakdown?: boolean;
+    showEventTravelMode?: boolean;
+    showEventSustainabilityActions?: boolean;
+    showEventOffset?: boolean;
+    showEventCertifications?: boolean;
+  };
+}
+
+export interface DelegateDppGenerationRequest {
+  companyId: number;
+  delegateId: number;
+  template: DelegateDppTemplateData;
+  publicBaseUrl?: string;
+}
+
 const COMPANY_DPP_TYPE = "COMPANY";
 const USER_DPP_TYPE = "USER";
+const DELEGATE_DPP_TYPE = "DELEGATE";
 const TEMPLATE_ROOT = path.resolve(__dirname, "../templates");
 const DPP_TEMPLATE_FILES = {
   COMPANY: path.join(TEMPLATE_ROOT, "company-dpp", "company-dpp-template.ejs"),
   USER: path.join(TEMPLATE_ROOT, "user-dpp", "user-dpp-template.ejs"),
+  DELEGATE: path.join(TEMPLATE_ROOT, "delegate-dpp", "delegate-dpp-template.ejs"),
   PRODUCT: path.join(TEMPLATE_ROOT, "product-dpp", "product-dpp-template.ejs"),
 } as const;
 
@@ -183,6 +265,7 @@ const DPP_STORAGE_ROOT = resolveStorageRoot();
 const DPP_STORAGE_FOLDERS = {
   COMPANY: path.join(DPP_STORAGE_ROOT, "company"),
   USER: path.join(DPP_STORAGE_ROOT, "user"),
+  DELEGATE: path.join(DPP_STORAGE_ROOT, "delegate"),
 } as const;
 
 function getDppPhysicalFilePath(
@@ -221,6 +304,14 @@ export function resolveUserDppPhysicalFilePath(
   htmlFileName: string,
 ): string {
   return getDppPhysicalFilePath("USER", companyID, publicToken, htmlFileName);
+}
+
+export function resolveDelegateDppPhysicalFilePath(
+  companyID: number,
+  publicToken: string,
+  htmlFileName: string,
+): string {
+  return getDppPhysicalFilePath("DELEGATE", companyID, publicToken, htmlFileName);
 }
 
 function generatePublicToken(length: number = 8): string {
@@ -475,6 +566,61 @@ export async function generateUserDpp(
       await transaction.rollback();
     }
 
+    throw error;
+  }
+}
+
+export async function generateDelegateDpp(
+  data: DelegateDppGenerationRequest,
+): Promise<CompanyDppResult> {
+  const { companyId, delegateId, template, publicBaseUrl } = data;
+  const pool = await getPool();
+  const transaction = new sql.Transaction(pool);
+  let transactionBegun = false;
+
+  try {
+    await transaction.begin(sql.ISOLATION_LEVEL.SERIALIZABLE);
+    transactionBegun = true;
+
+    const passportGUID = crypto.randomUUID();
+    const publicToken = generatePublicToken(8);
+    const passportVersion = await getNextPassportVersion(transaction, companyId);
+    const baseUrlSource = ENV.PUBLIC_BASE_URL?.trim() || publicBaseUrl?.trim() || "";
+    const publishedHTMLURL = `${normalizeBaseUrl(baseUrlSource)}/dpp/${publicToken}?passportType=${DELEGATE_DPP_TYPE}`;
+    const html = await ejs.renderFile(getTemplatePath(DELEGATE_DPP_TYPE), template);
+    const dppDirectory = path.join(DPP_STORAGE_FOLDERS.DELEGATE, String(companyId), publicToken);
+    const htmlFileName = `delegate_${companyId}_${publicToken}.html`;
+    const physicalFilePath = getDppPhysicalFilePath("DELEGATE", companyId, publicToken, htmlFileName);
+    const htmlFilePath = `/dpp/delegate/${companyId}/${publicToken}/${htmlFileName}`;
+
+    await fs.mkdir(dppDirectory, { recursive: true });
+    await fs.writeFile(physicalFilePath, html, "utf8");
+
+    await new sql.Request(transaction)
+      .input("CompanyID", sql.Int, companyId)
+      .input("PassportGUID", sql.NVarChar(100), passportGUID)
+      .input("PassportVersion", sql.Int, passportVersion)
+      .input("PassportType", sql.NVarChar(20), DELEGATE_DPP_TYPE)
+      .input("HTMLFileName", sql.NVarChar(200), htmlFileName)
+      .input("HTMLFilePath", sql.NVarChar(500), htmlFilePath)
+      .input("PublishedHTMLURL", sql.NVarChar(500), publishedHTMLURL)
+      .input("PublicToken", sql.NVarChar(100), publicToken)
+      .input("CreatedBy", sql.Int, delegateId)
+      .input("ModifiedBy", sql.Int, delegateId)
+      .input("ExtNote1", sql.NVarChar(sql.MAX), JSON.stringify({ delegateId }))
+      .input("ExtNote2", sql.NVarChar(sql.MAX), JSON.stringify({ template }))
+      .query(`
+        INSERT INTO lca_master.gs_CompanyDigitalPassport
+        (CompanyID, PassportGUID, PassportVersion, PassportType, HTMLFileName, HTMLFilePath, PublishedHTMLURL, IsPublished, PublishedOn, CreatedOn, ModifiedOn, CreatedBy, ModifiedBy, IsActive, PublicToken, ExtNote1, ExtNote2)
+        VALUES
+        (@CompanyID, @PassportGUID, @PassportVersion, @PassportType, @HTMLFileName, @HTMLFilePath, @PublishedHTMLURL, 1, GETDATE(), GETDATE(), GETDATE(), @CreatedBy, @ModifiedBy, 1, @PublicToken, @ExtNote1, @ExtNote2)
+      `);
+
+    await transaction.commit();
+    transactionBegun = false;
+    return { passportGUID, publicToken, passportVersion, htmlFileName, htmlFilePath, publishedHTMLURL, physicalFilePath };
+  } catch (error) {
+    if (transactionBegun) await transaction.rollback();
     throw error;
   }
 }

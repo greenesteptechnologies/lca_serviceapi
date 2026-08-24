@@ -1,0 +1,682 @@
+<%
+/**
+ * COMBINED PASSPORT TEMPLATE — payload contract
+ * ------------------------------------------------------------------
+ * The Delegate Passport ALWAYS renders, with two true layout variants
+ * switched purely by CSS media query (no JS, no server-side device
+ * detection needed):
+ *   - Mobile  (< 640px): dark "digital badge" card — matches the
+ *     phone mockup: dark header strip, photo+name+FULL ACCESS pill,
+ *     entry QR box, single "Up next" agenda item, compact footprint
+ *     bar, one "Attendance & CPD credits" row.
+ *   - Desktop (>= 640px): full light card — header, role/org/QR meta
+ *     row, 2x2 grid (agenda / footprint / credentials / verification).
+ * Both variants read the SAME data — nothing is duplicated in the payload.
+ *
+ * The Event Sustainability Passport is a separate card below, gated
+ * by a single top-level flag:
+ *
+ *   flags.showEventPassport = true | false
+ *
+ * res.render('passport', {
+ *   event: {                                   // shared event identity
+ *     name, year, id, dates, venue, city, verified, myPassportUrl, logoUrl
+ *   },
+ *
+ *   // ---- Delegate Passport data (always used, both variants) ----
+ *   delegate:   { fullName, jobTitle, company, passType, photoUrl, idNumber },
+ *   qr:         { imageUrl, label, sublabel },
+ *   agenda:     [ { time, title, location } ],   // first item = mobile "Up next"
+ *   footprint:  {
+ *     total, unit, offsetLabel,
+ *     segments: [ { label, value, percent } ]
+ *   },
+ *   credentials: [ { title, subtitle, verified } ],
+ *   verification: { credentialType, issuerDid, revocable, active, shareContactCard, sealImageUrl },
+ *
+ *   // ---- Event Sustainability Passport data (only used if shown) ----
+ *   eventStats:  { totalFootprint, unit, perDelegate, delegates, offsetPercent },
+ *   eventBreakdown:       [ { label, percent } ],
+ *   eventTravelByMode:    [ { mode, percent } ],
+ *   eventSustainabilityActions: [ { label, value } ],
+ *   eventOffset: { residualEmissions, unit, offsetPurchased, offsetLabel, net, registry, projectId, vintage },
+ *   eventCertifications:  [ 'ISO 20121 (events)', ... ],
+ *
+ *   branding: { primary, accent },   // optional overrides, shared by all cards
+ *
+ *   flags: {
+ *     // Delegate Passport sections (desktop variant only, each defaults true)
+ *     showAgenda: true,
+ *     showFootprint: true,
+ *     showCredentials: true,
+ *     showVerification: true,
+ *
+ *     // Whether to render the Event Sustainability Passport at all
+ *     showEventPassport: true,
+ *
+ *     // Optional fine-grained control WITHIN the event passport,
+ *     // only relevant when showEventPassport is true
+ *     showEventBreakdown: true,
+ *     showEventTravelMode: true,
+ *     showEventSustainabilityActions: true,
+ *     showEventOffset: true,
+ *     showEventCertifications: true
+ *   }
+ * })
+ * ------------------------------------------------------------------
+ */
+
+const event        = locals.event || {};
+const delegate     = locals.delegate || {};
+const qr           = locals.qr || {};
+const agenda       = locals.agenda || [];
+const footprint    = locals.footprint || {};
+const footprintSegments = footprint.segments || [];
+const credentials  = locals.credentials || [];
+const verification = locals.verification || {};
+
+const eventStats   = locals.eventStats || {};
+const eventBreakdown = locals.eventBreakdown || [];
+const eventTravelByMode = locals.eventTravelByMode || [];
+const eventSustainabilityActions = locals.eventSustainabilityActions || [];
+const eventOffset  = locals.eventOffset || {};
+const eventCertifications = locals.eventCertifications || [];
+
+const branding = Object.assign({ primary: '#0B2545', accent: '#14B8A6' }, locals.branding || {});
+
+const flags = Object.assign({
+  showAgenda: true,
+  showFootprint: true,
+  showCredentials: true,
+  showVerification: true,
+
+  showEventPassport: true,
+  showEventBreakdown: true,
+  showEventTravelMode: true,
+  showEventSustainabilityActions: true,
+  showEventOffset: true,
+  showEventCertifications: true
+}, locals.flags || {});
+
+const fmtNum = (n) => (n === undefined || n === null || n === '') ? '—' : n;
+const segmentColors = ['#0B2545', '#14B8A6', '#7C93B8', '#C7D2E0', '#E4E7EC'];
+const upNext = agenda.length ? agenda[0] : null;
+%><!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title><%= fmtNum(delegate.fullName) %> · Passport</title>
+<style>
+  :root {
+    --pp-primary: <%= branding.primary %>;
+    --pp-accent: <%= branding.accent %>;
+    --pp-ink: #16213A;
+    --pp-muted: #6B7280;
+    --pp-border: #E4E7EC;
+    --pp-bg: #F5F6F8;
+    --pp-card: #FFFFFF;
+    --pp-track: #E9EBEF;
+    --pp-radius-lg: 16px;
+    --pp-radius-md: 10px;
+    --pp-shadow: 0 1px 2px rgba(16, 24, 40, 0.06), 0 1px 3px rgba(16, 24, 40, 0.08);
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    background: var(--pp-bg);
+    font-family: 'Inter', 'Manrope', -apple-system, BlinkMacSystemFont, sans-serif;
+    color: var(--pp-ink);
+    padding: 24px;
+  }
+  .pp-wrap { max-width: 980px; margin: 0 auto; display: flex; flex-direction: column; gap: 24px; }
+
+  .pp-card {
+    background: var(--pp-card);
+    border: 1px solid var(--pp-border);
+    border-radius: var(--pp-radius-lg);
+    box-shadow: var(--pp-shadow);
+    overflow: hidden;
+  }
+
+  /* ===================================================================
+     DELEGATE PASSPORT — two variants, toggled purely by media query.
+     Default (mobile-first): show the dark digital-badge variant.
+     From 640px up: show the full desktop card instead.
+     =================================================================== */
+  .pp-mobile-badge { display: block; max-width: 360px; margin: 0 auto; }
+  .pp-desktop-card { display: none; }
+  @media (min-width: 640px) {
+    .pp-mobile-badge { display: none; }
+    .pp-desktop-card { display: block; }
+  }
+
+  /* ---- Mobile digital badge ---- */
+  .pp-badge-card {
+    background: var(--pp-card);
+    border-radius: var(--pp-radius-lg);
+    box-shadow: var(--pp-shadow);
+    overflow: hidden;
+  }
+  .pp-badge-topbar {
+    background: var(--pp-primary);
+    color: #fff;
+    padding: 12px 16px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    font-size: 12px;
+    font-weight: 700;
+    letter-spacing: 0.03em;
+    text-transform: uppercase;
+  }
+  .pp-badge-body { padding: 16px; }
+  .pp-badge-id-row { display: flex; gap: 12px; align-items: center; margin-bottom: 16px; }
+  .pp-badge-avatar {
+    width: 56px; height: 56px; border-radius: 10px;
+    background: var(--pp-track); background-size: cover; background-position: center;
+    flex-shrink: 0;
+  }
+  .pp-badge-name { font-size: 15px; font-weight: 700; }
+  .pp-badge-subline { font-size: 12px; color: var(--pp-muted); margin-top: 1px; }
+  .pp-badge-pill {
+    display: inline-block;
+    margin-top: 6px;
+    font-size: 10px;
+    font-weight: 700;
+    letter-spacing: 0.04em;
+    padding: 3px 10px;
+    border: 1px solid var(--pp-ink);
+    border-radius: 999px;
+  }
+
+  .pp-badge-qr-row {
+    display: flex; align-items: center; gap: 10px;
+    border: 1px solid var(--pp-border); border-radius: var(--pp-radius-md);
+    padding: 10px 12px; margin-bottom: 16px;
+  }
+  .pp-badge-qr-icon {
+    width: 30px; height: 30px; border-radius: 5px;
+    background: var(--pp-track); background-size: cover; background-position: center; flex-shrink: 0;
+  }
+  .pp-badge-qr-title { font-size: 12.5px; font-weight: 600; }
+  .pp-badge-qr-sub { font-size: 11px; color: var(--pp-muted); }
+
+  .pp-badge-section-label {
+    font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.04em;
+    color: var(--pp-ink); margin-bottom: 8px;
+  }
+  .pp-badge-upnext {
+    border: 1px solid var(--pp-border); border-radius: var(--pp-radius-md);
+    padding: 10px 12px; margin-bottom: 16px; font-size: 12.5px;
+  }
+  .pp-badge-upnext-time { color: var(--pp-muted); }
+  .pp-badge-upnext-title { font-weight: 600; margin-top: 2px; }
+
+  .pp-badge-footprint { margin-bottom: 16px; }
+  .pp-badge-fp-row { display: flex; justify-content: space-between; align-items: baseline; margin-bottom: 8px; }
+  .pp-badge-fp-value { font-size: 26px; font-weight: 800; }
+  .pp-badge-fp-unit { font-size: 12px; color: var(--pp-muted); margin-left: 3px; }
+  .pp-badge-fp-offset { font-size: 11.5px; color: var(--pp-accent); font-weight: 600; }
+  .pp-badge-fp-track { display: flex; height: 6px; border-radius: 4px; overflow: hidden; background: var(--pp-track); margin-bottom: 6px; }
+  .pp-badge-fp-seg { height: 100%; }
+  .pp-badge-fp-legend { display: flex; justify-content: space-between; font-size: 10.5px; color: var(--pp-muted); }
+
+  .pp-badge-creds-row {
+    display: flex; align-items: center; gap: 10px;
+    border: 1px solid var(--pp-border); border-radius: var(--pp-radius-md);
+    padding: 10px 12px;
+  }
+  .pp-badge-creds-title { font-size: 12.5px; font-weight: 600; }
+  .pp-badge-creds-sub { font-size: 11px; color: var(--pp-muted); }
+  .pp-badge-info-btn {
+    margin-left: auto; width: 20px; height: 20px; border-radius: 50%;
+    border: 1px solid var(--pp-border); color: var(--pp-muted); font-size: 10px;
+    display: flex; align-items: center; justify-content: center; flex-shrink: 0;
+  }
+
+  .pp-badge-footer-note {
+    font-size: 11.5px; color: var(--pp-muted); padding: 10px 4px 0; text-align: center;
+  }
+  .pp-badge-footer-note::before { content: "✎ "; }
+
+  /* ===== shared bits used by desktop delegate card + event card ===== */
+  .pp-header {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    padding: 20px 24px;
+    border-bottom: 1px solid var(--pp-border);
+    flex-wrap: wrap;
+  }
+  .pp-avatar {
+    width: 64px; height: 64px; border-radius: 50%;
+    background: var(--pp-track); background-size: cover; background-position: center;
+    border: 1px solid var(--pp-border); flex-shrink: 0;
+  }
+  .pp-logo {
+    width: 44px; height: 44px; border-radius: 10px;
+    background: var(--pp-track); background-size: cover; background-position: center;
+    flex-shrink: 0;
+  }
+  .pp-header-text { flex: 1; min-width: 200px; }
+  .pp-header-text h1 { margin: 0; font-size: 18px; font-weight: 700; }
+  .pp-header-text h1 .pp-suffix { font-weight: 500; color: var(--pp-muted); }
+  .pp-header-text .pp-subline { margin-top: 2px; font-size: 13px; color: var(--pp-muted); }
+
+  .pp-note {
+    font-size: 12.5px; color: var(--pp-muted);
+    padding: 12px 24px; border-bottom: 1px solid var(--pp-border); background: #FAFBFC;
+  }
+  .pp-note::before { content: "✎ "; }
+  .pp-footer-note { font-size: 12px; color: var(--pp-muted); padding: 4px 24px 20px; }
+  .pp-footer-note::before { content: "✎ "; }
+
+  .pp-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; padding: 20px 24px; }
+  @media (max-width: 900px) { .pp-grid { grid-template-columns: 1fr; } }
+
+  .pp-section { border: 1px solid var(--pp-border); border-radius: var(--pp-radius-md); padding: 16px; }
+  .pp-section h2 { margin: 0 0 12px; font-size: 14px; font-weight: 700; }
+
+  /* ===== Desktop delegate passport specifics ===== */
+  .pp-meta-row {
+    display: grid; grid-template-columns: 1fr 1fr auto; gap: 24px; align-items: center;
+    padding: 20px 24px; border-bottom: 1px solid var(--pp-border);
+  }
+  @media (max-width: 900px) { .pp-meta-row { grid-template-columns: 1fr; } }
+  .pp-meta-label { font-size: 11px; letter-spacing: 0.06em; text-transform: uppercase; color: var(--pp-muted); margin-bottom: 4px; }
+  .pp-meta-value { font-size: 15px; font-weight: 700; }
+
+  .pp-qr-box { display: flex; align-items: center; gap: 12px; border: 1px solid var(--pp-border); border-radius: var(--pp-radius-md); padding: 10px 16px; background: #FAFBFC; }
+  .pp-qr-icon { width: 40px; height: 40px; border-radius: 6px; background: var(--pp-track); background-size: cover; background-position: center; flex-shrink: 0; }
+  .pp-qr-label { font-size: 13px; font-weight: 600; }
+  .pp-qr-sublabel { font-size: 12px; color: var(--pp-muted); }
+
+  .pp-agenda-row { display: flex; justify-content: space-between; align-items: baseline; padding: 8px 0; border-top: 1px solid var(--pp-border); font-size: 13px; }
+  .pp-agenda-row:first-of-type { border-top: none; }
+  .pp-agenda-time { color: var(--pp-muted); width: 52px; flex-shrink: 0; }
+  .pp-agenda-title { flex: 1; font-weight: 600; }
+  .pp-agenda-location { color: var(--pp-muted); }
+
+  .pp-footprint-total { display: flex; justify-content: space-between; align-items: baseline; margin-bottom: 12px; }
+  .pp-footprint-value { font-size: 30px; font-weight: 800; }
+  .pp-footprint-unit { font-size: 13px; color: var(--pp-muted); margin-left: 4px; }
+  .pp-footprint-offset { font-size: 12.5px; color: var(--pp-accent); font-weight: 600; }
+  .pp-fp-segment { margin-bottom: 8px; }
+  .pp-fp-segment-label { display: flex; justify-content: space-between; font-size: 12px; color: var(--pp-muted); margin-bottom: 3px; }
+  .pp-fp-track { height: 6px; background: var(--pp-track); border-radius: 4px; overflow: hidden; }
+  .pp-fp-fill { height: 100%; background: var(--pp-primary); border-radius: 4px; }
+
+  .pp-credential-row { display: flex; align-items: center; gap: 10px; padding: 8px 0; border-top: 1px solid var(--pp-border); }
+  .pp-credential-row:first-of-type { border-top: none; }
+  .pp-check { width: 20px; height: 20px; border-radius: 50%; background: var(--pp-accent); color: #fff; font-size: 12px; display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
+  .pp-credential-title { font-size: 13px; font-weight: 600; }
+  .pp-credential-subtitle { font-size: 11.5px; color: var(--pp-muted); }
+  .pp-info-btn { margin-left: auto; width: 22px; height: 22px; border-radius: 50%; border: 1px solid var(--pp-border); color: var(--pp-muted); font-size: 11px; display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
+
+  .pp-verify-row { display: flex; gap: 12px; align-items: flex-start; }
+  .pp-seal { width: 40px; height: 40px; border-radius: 50%; background: var(--pp-track); background-size: cover; background-position: center; flex-shrink: 0; }
+  .pp-verify-title { font-size: 13px; font-weight: 700; }
+  .pp-verify-line { font-size: 12px; color: var(--pp-muted); margin-top: 2px; }
+  .pp-verify-status { display: inline-flex; align-items: center; gap: 4px; font-size: 12px; color: var(--pp-accent); font-weight: 600; margin-top: 6px; }
+
+  /* ===== Event passport specifics ===== */
+  .pp-badge-pip {
+    display: inline-flex; align-items: center; gap: 4px; font-size: 12px; font-weight: 600;
+    padding: 6px 12px; border-radius: 999px; border: 1px solid var(--pp-accent); color: var(--pp-accent);
+  }
+  .pp-link-btn {
+    font-size: 12px; font-weight: 600; padding: 6px 12px; border-radius: 999px;
+    border: 1px solid var(--pp-border); color: var(--pp-ink); text-decoration: none; background: #FAFBFC;
+  }
+  .pp-header-actions { display: flex; gap: 8px; align-items: center; }
+
+  .pp-stats { display: grid; grid-template-columns: repeat(4, 1fr); border-bottom: 1px solid var(--pp-border); }
+  @media (max-width: 700px) { .pp-stats { grid-template-columns: repeat(2, 1fr); } }
+  .pp-stat { padding: 16px 24px; border-right: 1px solid var(--pp-border); }
+  .pp-stat:last-child { border-right: none; }
+  .pp-stat-label { font-size: 11px; letter-spacing: 0.06em; text-transform: uppercase; color: var(--pp-muted); margin-bottom: 4px; }
+  .pp-stat-value { font-size: 22px; font-weight: 800; }
+  .pp-stat-value.pp-accent-value { color: var(--pp-accent); }
+
+  .pp-stack-track { display: flex; height: 10px; border-radius: 6px; overflow: hidden; background: var(--pp-track); margin-bottom: 10px; }
+  .pp-stack-seg { height: 100%; }
+  .pp-legend { display: flex; flex-wrap: wrap; gap: 10px 16px; font-size: 12px; color: var(--pp-muted); }
+  .pp-legend-item { display: flex; align-items: center; gap: 6px; }
+  .pp-legend-dot { width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; }
+
+  .pp-mode-row { margin-bottom: 10px; }
+  .pp-mode-label { display: flex; justify-content: space-between; font-size: 12.5px; margin-bottom: 4px; }
+  .pp-mode-track { height: 8px; background: var(--pp-track); border-radius: 5px; overflow: hidden; }
+  .pp-mode-fill { height: 100%; background: var(--pp-accent); border-radius: 5px; }
+
+  .pp-actions-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+  .pp-action-label { font-size: 11.5px; color: var(--pp-muted); margin-bottom: 2px; }
+  .pp-action-value { font-size: 15px; font-weight: 700; }
+
+  .pp-offset-row { display: flex; justify-content: space-between; font-size: 13px; padding: 6px 0; border-top: 1px solid var(--pp-border); }
+  .pp-offset-row:first-of-type { border-top: none; }
+  .pp-offset-row .pp-offset-label { color: var(--pp-muted); }
+  .pp-offset-row .pp-offset-value { font-weight: 700; }
+  .pp-offset-net .pp-offset-value { color: var(--pp-accent); }
+  .pp-offset-meta { font-size: 11px; color: var(--pp-muted); margin-top: 8px; }
+
+  .pp-certs { display: flex; flex-wrap: wrap; gap: 10px; padding: 16px 24px; border-top: 1px solid var(--pp-border); }
+  .pp-cert-pill { font-size: 12.5px; font-weight: 600; padding: 8px 16px; border: 1px solid var(--pp-border); border-radius: 999px; }
+</style>
+</head>
+<body>
+<div class="pp-wrap">
+
+  <!-- ================= DELEGATE PASSPORT (always shown) ================= -->
+
+  <!-- ---- Mobile digital-badge variant (< 640px) ---- -->
+  <div class="pp-mobile-badge">
+    <div class="pp-badge-card">
+      <div class="pp-badge-topbar">
+        <span>Delegate · <%= fmtNum(event.name) %> <%= fmtNum(event.year) %></span>
+        <span>✓</span>
+      </div>
+      <div class="pp-badge-body">
+        <div class="pp-badge-id-row">
+          <div class="pp-badge-avatar" <% if (delegate.photoUrl) { %>style="background-image:url('<%= delegate.photoUrl %>')"<% } %>></div>
+          <div>
+            <div class="pp-badge-name"><%= fmtNum(delegate.fullName) %></div>
+            <div class="pp-badge-subline"><%= fmtNum(delegate.jobTitle) %></div>
+            <div class="pp-badge-subline"><%= fmtNum(delegate.company) %></div>
+            <span class="pp-badge-pill"><%= (delegate.passType || 'Full access').toUpperCase() %></span>
+          </div>
+        </div>
+
+        <div class="pp-badge-qr-row">
+          <div class="pp-badge-qr-icon" <% if (qr.imageUrl) { %>style="background-image:url('<%= qr.imageUrl %>')"<% } %>></div>
+          <div>
+            <div class="pp-badge-qr-title">Entry / session check-in</div>
+            <div class="pp-badge-qr-sub">Show this QR at doors</div>
+          </div>
+        </div>
+
+        <% if (flags.showAgenda) { %>
+        <div class="pp-badge-section-label">Up next</div>
+        <div class="pp-badge-upnext">
+          <% if (upNext) { %>
+            <div class="pp-badge-upnext-time"><%= upNext.time %> · <%= upNext.location %></div>
+            <div class="pp-badge-upnext-title"><%= upNext.title %></div>
+          <% } else { %>
+            <div class="pp-badge-upnext-title">No sessions scheduled yet.</div>
+          <% } %>
+        </div>
+        <% } %>
+
+        <% if (flags.showFootprint) { %>
+        <div class="pp-badge-section-label">My event footprint</div>
+        <div class="pp-badge-footprint">
+          <div class="pp-badge-fp-row">
+            <div><span class="pp-badge-fp-value"><%= fmtNum(footprint.total) %></span><span class="pp-badge-fp-unit"><%= footprint.unit || 'tCO2e' %></span></div>
+            <% if (footprint.offsetLabel) { %><div class="pp-badge-fp-offset"><%= footprint.offsetLabel %></div><% } %>
+          </div>
+          <div class="pp-badge-fp-track">
+            <% footprintSegments.forEach(function(seg, i) { %>
+              <div class="pp-badge-fp-seg" style="width: <%= seg.percent || 0 %>%; background: <%= segmentColors[i % segmentColors.length] %>"></div>
+            <% }); %>
+          </div>
+          <div class="pp-badge-fp-legend">
+            <% footprintSegments.forEach(function(seg) { %><span><%= seg.label %></span><% }); %>
+          </div>
+        </div>
+        <% } %>
+
+        <% if (flags.showCredentials && credentials.length) { %>
+        <div class="pp-badge-creds-row">
+          <div>
+            <div class="pp-badge-creds-title"><%= credentials[0].title %></div>
+            <div class="pp-badge-creds-sub"><%= credentials[0].subtitle %></div>
+          </div>
+          <div class="pp-badge-info-btn">i</div>
+        </div>
+        <% } %>
+      </div>
+    </div>
+    <!-- <div class="pp-badge-footer-note">Doubles as the live entry badge AND a record of the delegate's own footprint.</div> -->
+  </div>
+
+  <!-- ---- Desktop card variant (>= 640px) ---- -->
+  <div class="pp-desktop-card">
+    <div class="pp-card">
+
+      <div class="pp-header">
+        <div class="pp-avatar" <% if (delegate.photoUrl) { %>style="background-image:url('<%= delegate.photoUrl %>')"<% } %>></div>
+        <div class="pp-header-text">
+          <h1><%= fmtNum(delegate.fullName) %> <span class="pp-suffix">· Delegate Passport</span></h1>
+          <div class="pp-subline">
+            <%= fmtNum(event.name) %> <%= fmtNum(event.year) %>
+            <% if (delegate.idNumber) { %> · ID <%= delegate.idNumber %><% } %>
+          </div>
+        </div>
+      </div>
+
+      <div class="pp-meta-row">
+        <div>
+          <div class="pp-meta-label">Role</div>
+          <div class="pp-meta-value"><%= fmtNum(delegate.jobTitle) %></div>
+        </div>
+        <div>
+          <div class="pp-meta-label">Organization</div>
+          <div class="pp-meta-value"><%= fmtNum(delegate.company) %></div>
+        </div>
+        <div class="pp-qr-box">
+          <div class="pp-qr-icon" <% if (qr.imageUrl) { %>style="background-image:url('<%= qr.imageUrl %>')"<% } %>></div>
+          <div>
+            <div class="pp-qr-label"><%= qr.label || 'Entry & session check-in QR' %></div>
+            <div class="pp-qr-sublabel"><%= qr.sublabel || 'Scan at doors · valid all event days' %></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- <div class="pp-note">Identity + entry QR are the hero — the things a delegate opens most.</div> -->
+
+      <div class="pp-grid">
+
+        <% if (flags.showAgenda) { %>
+        <div class="pp-section">
+          <h2>My agenda</h2>
+          <% agenda.forEach(function(item) { %>
+            <div class="pp-agenda-row">
+              <span class="pp-agenda-time"><%= item.time %></span>
+              <span class="pp-agenda-title"><%= item.title %></span>
+              <span class="pp-agenda-location"><%= item.location %></span>
+            </div>
+          <% }); %>
+          <% if (!agenda.length) { %><div class="pp-agenda-row"><span class="pp-agenda-title">No sessions scheduled yet.</span></div><% } %>
+        </div>
+        <% } %>
+
+        <% if (flags.showFootprint) { %>
+        <div class="pp-section">
+          <h2>My event footprint</h2>
+          <div class="pp-footprint-total">
+            <div>
+              <span class="pp-footprint-value"><%= fmtNum(footprint.total) %></span>
+              <span class="pp-footprint-unit"><%= footprint.unit || 'tCO2e' %></span>
+            </div>
+            <% if (footprint.offsetLabel) { %><div class="pp-footprint-offset"><%= footprint.offsetLabel %></div><% } %>
+          </div>
+          <% footprintSegments.forEach(function(seg) { %>
+            <div class="pp-fp-segment">
+              <div class="pp-fp-segment-label"><span><%= seg.label %></span><span><%= seg.value %></span></div>
+              <div class="pp-fp-track"><div class="pp-fp-fill" style="width: <%= seg.percent || 0 %>%"></div></div>
+            </div>
+          <% }); %>
+        </div>
+        <% } %>
+
+        <% if (flags.showCredentials) { %>
+        <div class="pp-section">
+          <h2>Credentials earned</h2>
+          <% credentials.forEach(function(cred) { %>
+            <div class="pp-credential-row">
+              <div class="pp-check">✓</div>
+              <div>
+                <div class="pp-credential-title"><%= cred.title %></div>
+                <div class="pp-credential-subtitle"><%= cred.subtitle %></div>
+              </div>
+              <div class="pp-info-btn">i</div>
+            </div>
+          <% }); %>
+          <% if (!credentials.length) { %><div class="pp-credential-subtitle">No credentials issued yet.</div><% } %>
+        </div>
+        <% } %>
+
+        <% if (flags.showVerification) { %>
+        <div class="pp-section">
+          <h2>Verification & sharing</h2>
+          <div class="pp-verify-row">
+            <div class="pp-seal" <% if (verification.sealImageUrl) { %>style="background-image:url('<%= verification.sealImageUrl %>')"<% } %>></div>
+            <div>
+              <div class="pp-verify-title"><%= verification.credentialType || 'Verifiable Credential (W3C)' %></div>
+              <div class="pp-verify-line">
+                Issuer <%= fmtNum(verification.issuerDid) %> · <%= verification.revocable ? 'Revocable' : 'Non-revocable' %>
+              </div>
+              <div class="pp-verify-status">
+                <%= verification.active ? '● Active' : '○ Inactive' %>
+                <% if (verification.shareContactCard) { %>· Share contact card<% } %>
+              </div>
+            </div>
+          </div>
+        </div>
+        <% } %>
+
+      </div>
+
+      <!-- <div class="pp-footer-note">Privacy-first — only consented fields are shared when networking.</div> -->
+    </div>
+  </div>
+
+  <!-- ================= EVENT SUSTAINABILITY PASSPORT (flag-controlled) ================= -->
+  <% if (flags.showEventPassport) { %>
+  <div class="pp-card">
+
+    <div class="pp-header">
+      <div class="pp-logo" <% if (event.logoUrl) { %>style="background-image:url('<%= event.logoUrl %>')"<% } %>></div>
+      <div class="pp-header-text">
+        <h1><%= fmtNum(event.name) %> <%= fmtNum(event.year) %></h1>
+        <div class="pp-subline">
+          <%= fmtNum(event.dates) %> · <%= fmtNum(event.venue) %><% if (event.city) { %>, <%= event.city %><% } %> · Event Passport
+        </div>
+      </div>
+      <div class="pp-header-actions">
+        <% if (event.verified) { %><span class="pp-badge-pip">✓ Verified</span><% } %>
+        <% if (event.myPassportUrl) { %><a class="pp-link-btn" href="<%= event.myPassportUrl %>">→ My passport</a><% } %>
+      </div>
+    </div>
+
+    <div class="pp-stats">
+      <div class="pp-stat">
+        <div class="pp-stat-label">Total footprint</div>
+        <div class="pp-stat-value"><%= fmtNum(eventStats.totalFootprint) %> <%= eventStats.unit || 'tCO2e' %></div>
+      </div>
+      <div class="pp-stat">
+        <div class="pp-stat-label">Per delegate</div>
+        <div class="pp-stat-value"><%= fmtNum(eventStats.perDelegate) %> <%= eventStats.unit || 'tCO2e' %></div>
+      </div>
+      <div class="pp-stat">
+        <div class="pp-stat-label">Delegates</div>
+        <div class="pp-stat-value"><%= fmtNum(eventStats.delegates) %></div>
+      </div>
+      <div class="pp-stat">
+        <div class="pp-stat-label">Offset</div>
+        <div class="pp-stat-value pp-accent-value"><%= fmtNum(eventStats.offsetPercent) %><% if (eventStats.offsetPercent !== undefined) { %>%<% } %></div>
+      </div>
+    </div>
+
+    <!-- <div class="pp-note">"Per delegate" is the figure delegates relate to and the same number shown in their own passport.</div> -->
+
+    <div class="pp-grid">
+
+      <% if (flags.showEventBreakdown) { %>
+      <div class="pp-section">
+        <h2>Footprint breakdown</h2>
+        <div class="pp-stack-track">
+          <% eventBreakdown.forEach(function(seg, i) { %>
+            <div class="pp-stack-seg" style="width: <%= seg.percent || 0 %>%; background: <%= segmentColors[i % segmentColors.length] %>"></div>
+          <% }); %>
+        </div>
+        <div class="pp-legend">
+          <% eventBreakdown.forEach(function(seg, i) { %>
+            <div class="pp-legend-item">
+              <span class="pp-legend-dot" style="background: <%= segmentColors[i % segmentColors.length] %>"></span>
+              <span><%= seg.label %> <%= seg.percent %>%</span>
+            </div>
+          <% }); %>
+        </div>
+      </div>
+      <% } %>
+
+      <% if (flags.showEventTravelMode) { %>
+      <div class="pp-section">
+        <h2>Delegate travel by mode</h2>
+        <% eventTravelByMode.forEach(function(m) { %>
+          <div class="pp-mode-row">
+            <div class="pp-mode-label"><span><%= m.mode %></span><span><%= m.percent %>%</span></div>
+            <div class="pp-mode-track"><div class="pp-mode-fill" style="width: <%= m.percent || 0 %>%"></div></div>
+          </div>
+        <% }); %>
+      </div>
+      <% } %>
+
+      <% if (flags.showEventSustainabilityActions) { %>
+      <div class="pp-section">
+        <h2>Sustainability actions</h2>
+        <div class="pp-actions-grid">
+          <% eventSustainabilityActions.forEach(function(a) { %>
+            <div>
+              <div class="pp-action-label"><%= a.label %></div>
+              <div class="pp-action-value"><%= a.value %></div>
+            </div>
+          <% }); %>
+        </div>
+      </div>
+      <% } %>
+
+      <% if (flags.showEventOffset) { %>
+      <div class="pp-section">
+        <h2>Offset & net impact</h2>
+        <div class="pp-offset-row">
+          <span class="pp-offset-label">Residual emissions</span>
+          <span class="pp-offset-value"><%= fmtNum(eventOffset.residualEmissions) %> <%= eventOffset.unit || 'tCO2e' %></span>
+        </div>
+        <div class="pp-offset-row">
+          <span class="pp-offset-label">Offset purchased</span>
+          <span class="pp-offset-value"><%= fmtNum(eventOffset.offsetPurchased) %> <%= eventOffset.unit || 'tCO2e' %><% if (eventOffset.offsetLabel) { %> (<%= eventOffset.offsetLabel %>)<% } %></span>
+        </div>
+        <div class="pp-offset-row pp-offset-net">
+          <span class="pp-offset-label">Net</span>
+          <span class="pp-offset-value"><%= eventOffset.net || '—' %></span>
+        </div>
+        <% if (eventOffset.registry || eventOffset.projectId || eventOffset.vintage) { %>
+        <div class="pp-offset-meta">
+          <% if (eventOffset.registry) { %><%= eventOffset.registry %><% } %>
+          <% if (eventOffset.projectId) { %> · Project <%= eventOffset.projectId %><% } %>
+          <% if (eventOffset.vintage) { %> · Vintage <%= eventOffset.vintage %><% } %>
+        </div>
+        <% } %>
+      </div>
+      <% } %>
+
+    </div>
+
+    <% if (flags.showEventCertifications && eventCertifications.length) { %>
+    <div class="pp-certs">
+      <% eventCertifications.forEach(function(cert) { %>
+        <span class="pp-cert-pill"><%= cert %></span>
+      <% }); %>
+    </div>
+    <% } %>
+
+    <!-- <div class="pp-footer-note">Same module language as the company & facility passports — consistent, comparable, public.</div> -->
+  </div>
+  <% } %>
+
+</div>
+</body>
+</html>

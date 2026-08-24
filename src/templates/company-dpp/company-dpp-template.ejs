@@ -6,731 +6,243 @@
   <title><%= company.name %> — Company DPP</title>
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@latest/tabler-icons.min.css" />
   <style>
-    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    /* =====================================================================
+       Same design tokens / class system as delegate-passport & event-passport
+       (--pp-* variables, .pp-card, .pp-header, .pp-section, .pp-grid, etc.)
+       ===================================================================== */
+    * { box-sizing: border-box; margin: 0; padding: 0; }
 
     :root {
-      --teal: #1a6b6b;
-      --teal-light: #e6f4f4;
-      --teal-mid: #2e9e9e;
-      --green: #2d8a4e;
-      --green-light: #e8f5ec;
-      --slate: #4a5568;
-      --slate-light: #f7f8fa;
-      --border: #e2e8f0;
-      --text-primary: #1a202c;
-      --text-secondary: #64748b;
-      --white: #ffffff;
-      --shadow: 0 2px 12px rgba(0,0,0,0.07);
-      --radius: 12px;
+      --pp-primary: #0B2545;
+      --pp-accent: #14B8A6;
+      --pp-ink: #16213A;
+      --pp-muted: #6B7280;
+      --pp-border: #E4E7EC;
+      --pp-bg: #F5F6F8;
+      --pp-card: #FFFFFF;
+      --pp-track: #E9EBEF;
+      --pp-radius-lg: 16px;
+      --pp-radius-md: 10px;
+      --pp-shadow: 0 1px 2px rgba(16, 24, 40, 0.06), 0 1px 3px rgba(16, 24, 40, 0.08);
     }
 
     body {
-      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-      background: #f0f4f7;
-      color: var(--text-primary);
+      font-family: 'Inter', 'Manrope', -apple-system, BlinkMacSystemFont, sans-serif;
+      background: var(--pp-bg);
+      color: var(--pp-ink);
       min-height: 100vh;
-      padding-bottom: 80px;
+      padding: 24px 16px 100px;
     }
 
-    /* ── Header Banner ── */
-    .hero {
-      background: linear-gradient(135deg, #2c4a6e 0%, #1a6b6b 60%, #2e9e9e 100%);
-      padding: 2rem 1.5rem 2.5rem;
+    .pp-wrap { max-width: 640px; margin: 0 auto; }
+
+    .pp-card {
+      background: var(--pp-card);
+      border: 1px solid var(--pp-border);
+      border-radius: var(--pp-radius-lg);
+      box-shadow: var(--pp-shadow);
+      overflow: hidden;
+      margin-bottom: 16px;
+    }
+
+    /* ---- Hero header (dark, navy -> teal — same treatment as the mobile
+       delegate badge topbar, scaled up into a full header card) ---- */
+    .pp-hero {
+      background: linear-gradient(135deg, var(--pp-primary) 0%, #146868 55%, var(--pp-accent) 100%);
+      padding: 22px 20px 20px;
+      display: flex;
+      align-items: center;
+      gap: 16px;
+      flex-wrap: wrap;
       position: relative;
       overflow: hidden;
     }
-
-    .hero::before {
+    .pp-hero::before {
       content: '';
       position: absolute;
       top: -40px; right: -40px;
-      width: 200px; height: 200px;
+      width: 180px; height: 180px;
       border-radius: 50%;
-      background: rgba(255,255,255,0.05);
+      background: rgba(255,255,255,0.06);
+    }
+    .pp-hero-text { flex: 1; min-width: 200px; position: relative; z-index: 1; }
+    .pp-hero-brand {
+      font-size: 11px; font-weight: 700; letter-spacing: 0.08em; text-transform: uppercase;
+      color: rgba(255,255,255,0.65); margin-bottom: 6px;
+    }
+    .pp-hero-text h1 { font-size: 20px; font-weight: 700; color: #fff; margin-bottom: 6px; }
+    .pp-hero-text p { font-size: 12.5px; color: rgba(255,255,255,0.8); line-height: 1.55; max-width: 360px; }
+    .pp-hero-tags { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 12px; }
+    .pp-hero-tag {
+      background: rgba(255,255,255,0.16); color: rgba(255,255,255,0.95);
+      font-size: 11px; font-weight: 600; padding: 4px 11px; border-radius: 999px;
+    }
+    .pp-hero-logo {
+      width: 68px; height: 68px; border-radius: var(--pp-radius-md);
+      background: rgba(255,255,255,0.14); border: 1px solid rgba(255,255,255,0.25);
+      display: flex; align-items: center; justify-content: center; flex-shrink: 0;
+      overflow: hidden; position: relative; z-index: 1;
+    }
+    .pp-hero-logo i { font-size: 30px; color: rgba(255,255,255,0.9); }
+    .pp-hero-logo img { width: 100%; height: 100%; object-fit: cover; }
+
+    /* ---- Tab pills (same pill language as pp-badge-pip / pp-cert-pill) ---- */
+    .pp-tab-wrap { display: flex; justify-content: center; margin: -18px 0 16px; position: relative; z-index: 2; }
+    .pp-tabs {
+      display: flex; gap: 2px; background: var(--pp-card);
+      border: 1px solid var(--pp-border); border-radius: 999px; padding: 4px; box-shadow: var(--pp-shadow);
+    }
+    .pp-tab {
+      padding: 7px 16px; border-radius: 999px; font-size: 12.5px; font-weight: 600;
+      border: none; background: transparent; color: var(--pp-muted); font-family: inherit; cursor: pointer;
+    }
+    .pp-tab.active { background: var(--pp-primary); color: #fff; }
+
+    /* ---- Section header + grid (same as pp-section h2 in delegate/event cards) ---- */
+    .pp-header {
+      display: flex; align-items: center; gap: 8px;
+      padding: 14px 18px 10px; border-bottom: 1px solid var(--pp-border);
+    }
+    .pp-header i { font-size: 16px; color: var(--pp-accent); }
+    .pp-header h2 { font-size: 14px; font-weight: 700; color: var(--pp-ink); }
+    .pp-card-body { padding: 16px 18px; }
+
+    .pp-note { font-size: 12.5px; color: var(--pp-muted); padding: 10px 18px; border-bottom: 1px solid var(--pp-border); background: #FAFBFC; }
+    .pp-note::before { content: "✎ "; }
+    .pp-footer-note { font-size: 12px; color: var(--pp-muted); text-align: center; padding: 6px 12px; }
+
+    /* ---- Meta / info grid (same pattern as pp-meta-row / actions grid) ---- */
+    .pp-info-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; padding: 16px 18px; }
+    .pp-meta-label { font-size: 10.5px; letter-spacing: 0.06em; text-transform: uppercase; color: var(--pp-muted); margin-bottom: 4px; font-weight: 600; }
+    .pp-meta-value { font-size: 13.5px; font-weight: 600; color: var(--pp-ink); }
+    .pp-meta-value a { color: var(--pp-accent); text-decoration: none; }
+
+    /* ---- Stat tiles (reuses pp-stats pattern from event passport) ---- */
+    .pp-stats3 { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; padding: 16px 18px 0; }
+    .pp-stat-tile { background: var(--pp-bg); border: 1px solid var(--pp-border); border-radius: var(--pp-radius-md); padding: 14px 10px; text-align: center; position: relative; }
+    .pp-stat-tile .pp-stat-icon { width: 38px; height: 38px; border-radius: 50%; background: #fff; border: 1px solid var(--pp-border); display: flex; align-items: center; justify-content: center; margin: 0 auto 8px; }
+    .pp-stat-tile .pp-stat-icon i { font-size: 17px; }
+    .pp-stat-tile .pp-stat-value { font-size: 17px; font-weight: 800; color: var(--pp-ink); }
+    .pp-stat-tile .pp-stat-unit { font-size: 10.5px; color: var(--pp-muted); margin-top: 3px; line-height: 1.3; }
+
+    /* ---- Scope legend row (same visual family as event footprint-breakdown legend) ---- */
+    .pp-scope-row { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; padding: 12px 18px 16px; }
+    .pp-scope-tile { border-radius: var(--pp-radius-md); padding: 10px 12px; border: 1px solid var(--pp-border); text-align: center; }
+    .pp-scope-tile .pp-scope-label { font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 4px; }
+    .pp-scope-tile .pp-scope-val { font-size: 15px; font-weight: 700; }
+    .pp-scope-tile .pp-scope-sub { font-size: 10px; color: var(--pp-muted); margin-top: 1px; }
+    .pp-scope-1 { background: #FFF8E6; border-color: #F5D78A; } .pp-scope-1 .pp-scope-label, .pp-scope-1 .pp-scope-val { color: #946C00; }
+    .pp-scope-2 { background: #E8F5EC; border-color: #9DD4AE; } .pp-scope-2 .pp-scope-label, .pp-scope-2 .pp-scope-val { color: #1B6B35; }
+    .pp-scope-3 { background: #EEF2FF; border-color: #A5B4FC; } .pp-scope-3 .pp-scope-label, .pp-scope-3 .pp-scope-val { color: #3730A3; }
+
+    /* ---- Toggle row ---- */
+    .pp-toggle-row { display: flex; align-items: center; justify-content: center; gap: 10px; padding: 4px 0 14px; font-size: 12.5px; color: var(--pp-muted); }
+    .pp-toggle { width: 36px; height: 20px; border-radius: 10px; background: var(--pp-accent); border: none; cursor: pointer; position: relative; }
+    .pp-toggle::after { content: ''; position: absolute; right: 3px; top: 3px; width: 14px; height: 14px; border-radius: 50%; background: #fff; }
+
+    /* ---- Bar rows (same pattern as pp-mode-row / pp-mode-track / pp-mode-fill) ---- */
+    .pp-bar-block { padding: 14px 18px; }
+    .pp-bar-row { display: flex; align-items: center; gap: 10px; margin-bottom: 8px; }
+    .pp-bar-label { font-size: 11px; color: var(--pp-muted); width: 84px; flex-shrink: 0; text-align: right; }
+    .pp-bar-track { flex: 1; height: 8px; background: var(--pp-track); border-radius: 5px; overflow: hidden; }
+    .pp-bar-fill { height: 100%; border-radius: 5px; transition: width 0.8s ease; }
+    .pp-bar-val { font-size: 11px; font-weight: 700; color: var(--pp-ink); width: 55px; flex-shrink: 0; }
+
+    /* ---- KPI list rows (same pattern as pp-credential-row) ---- */
+    .pp-kpi-row { display: flex; align-items: center; gap: 10px; padding: 11px 18px; border-top: 1px solid var(--pp-border); }
+    .pp-kpi-row:first-of-type { border-top: none; }
+    .pp-kpi-icon { width: 34px; height: 34px; border-radius: var(--pp-radius-md); display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
+    .pp-kpi-icon i { font-size: 17px; }
+    .pp-kpi-name { font-size: 13px; font-weight: 600; color: var(--pp-ink); }
+    .pp-kpi-desc { font-size: 11px; color: var(--pp-muted); margin-top: 1px; }
+    .pp-kpi-right { margin-left: auto; text-align: right; }
+    .pp-kpi-val { font-size: 14px; font-weight: 700; color: var(--pp-ink); }
+    .pp-kpi-unit { font-size: 10.5px; color: var(--pp-muted); }
+
+    /* ---- Certificates list (same pattern as pp-credential-row + pp-cert-pill) ---- */
+    .pp-cert-row { display: flex; align-items: center; gap: 10px; padding: 10px 18px; border-top: 1px solid var(--pp-border); }
+    .pp-cert-row:first-of-type { border-top: none; }
+    .pp-cert-icon { width: 32px; height: 32px; background: var(--pp-track); border-radius: var(--pp-radius-md); display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
+    .pp-cert-icon i { font-size: 16px; color: var(--pp-accent); }
+    .pp-cert-name { font-size: 13px; font-weight: 600; }
+    .pp-cert-issuer { font-size: 11px; color: var(--pp-muted); margin-top: 1px; }
+    .pp-cert-pill { margin-left: auto; font-size: 10.5px; font-weight: 700; padding: 4px 10px; border-radius: 999px; flex-shrink: 0; }
+    .pp-cert-pill.active { background: #E8F5EC; color: #1B6B35; }
+    .pp-cert-pill.pending { background: #FFF8E1; color: #92681A; }
+
+    /* ---- Verified / assurance row ---- */
+    .pp-verified-row { display: flex; align-items: center; gap: 8px; padding: 10px 18px; background: #E8F5EC; border-top: 1px solid #C3E6CB; }
+    .pp-verified-row i { font-size: 14px; color: #1B6B35; }
+    .pp-verified-row span { font-size: 11.5px; color: #1B6B35; font-weight: 600; }
+
+    /* ---- Practice cards (grid within a section) ---- */
+    .pp-practice-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; padding: 16px 18px; }
+    .pp-practice-card { border-radius: var(--pp-radius-md); overflow: hidden; border: 1px solid var(--pp-border); background: var(--pp-bg); }
+    .pp-practice-img { height: 70px; display: flex; align-items: center; justify-content: center; position: relative; }
+    .pp-practice-img .pp-practice-label { position: absolute; bottom: 0; left: 0; right: 0; background: linear-gradient(transparent, rgba(0,0,0,0.55)); color: #fff; font-size: 11px; font-weight: 700; padding: 6px 8px 4px; }
+    .pp-practice-body { padding: 8px 10px 10px; }
+    .pp-practice-body p { font-size: 11.5px; color: var(--pp-muted); line-height: 1.5; }
+
+    /* ---- Strip layout (LCA config — same idea as pp-offset-meta strip) ---- */
+    .pp-strip { display: grid; grid-template-columns: repeat(3, 1fr); border-top: 1px solid var(--pp-border); }
+    .pp-strip:first-of-type { border-top: none; }
+    .pp-strip-item { padding: 12px 14px; border-right: 1px solid var(--pp-border); text-align: center; }
+    .pp-strip-item:last-child { border-right: none; }
+    .pp-strip-item .pp-strip-label { font-size: 10px; color: var(--pp-muted); text-transform: uppercase; letter-spacing: 0.05em; font-weight: 700; margin-bottom: 3px; }
+    .pp-strip-item .pp-strip-val { font-size: 13px; font-weight: 700; color: var(--pp-ink); }
+
+    /* ---- About text block ---- */
+    .pp-about h3 { font-size: 11px; font-weight: 700; color: var(--pp-accent); text-transform: uppercase; letter-spacing: 0.06em; margin-bottom: 6px; }
+    .pp-about p { font-size: 12.5px; color: var(--pp-muted); line-height: 1.65; }
+    .pp-about-divider { height: 1px; background: var(--pp-border); margin: 12px 0; }
+
+    /* ---- Location grid ---- */
+    .pp-loc-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; padding: 16px 18px; }
+    .pp-loc-block p { font-size: 12.5px; color: var(--pp-ink); line-height: 1.55; }
+
+    /* ---- Tab panels ---- */
+    .pp-panel { display: none; }
+    .pp-panel.active { display: block; }
+
+    /* ---- Footer links ---- */
+    .pp-privacy-link { text-align: center; padding: 8px; font-size: 11.5px; }
+    .pp-privacy-link a { color: var(--pp-accent); text-decoration: none; }
+    .pp-powered { text-align: center; margin-top: 8px; font-size: 11.5px; color: var(--pp-muted); }
+    .pp-powered span { font-weight: 700; color: var(--pp-accent); }
+
+    /* ---- Bottom nav (same pill/active language as pp-tab) ---- */
+    .pp-bottom-nav {
+      position: fixed; bottom: 0; left: 0; right: 0; background: #fff;
+      border-top: 1px solid var(--pp-border); display: flex; justify-content: center; gap: 6px;
+      padding: 10px 16px; z-index: 10; box-shadow: 0 -2px 12px rgba(0,0,0,0.06);
+    }
+    .pp-nav-btn { display: flex; flex-direction: column; align-items: center; gap: 3px; background: none; border: none; cursor: pointer; padding: 6px 14px; border-radius: var(--pp-radius-md); color: var(--pp-muted); font-family: inherit; font-size: 10px; }
+    .pp-nav-btn i { font-size: 20px; }
+    .pp-nav-btn.active { background: var(--pp-primary); color: #fff; }
+
+    @media (max-width: 420px) {
+      .pp-info-grid, .pp-loc-grid, .pp-practice-grid { grid-template-columns: 1fr; }
+      .pp-stats3, .pp-scope-row, .pp-strip { grid-template-columns: 1fr 1fr; }
     }
-
-    .hero-inner {
-      max-width: 600px;
-      margin: 0 auto;
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      gap: 1rem;
-    }
-
-    .hero-text .brand {
-      font-size: 11px;
-      font-weight: 600;
-      letter-spacing: 0.1em;
-      color: rgba(255,255,255,0.6);
-      text-transform: uppercase;
-      margin-bottom: 6px;
-    }
-
-    .hero-text h1 {
-      font-size: 22px;
-      font-weight: 700;
-      color: #fff;
-      letter-spacing: 0.02em;
-      margin-bottom: 8px;
-    }
-
-    .hero-text p {
-      font-size: 12.5px;
-      color: rgba(255,255,255,0.75);
-      line-height: 1.6;
-      max-width: 340px;
-    }
-
-    .hero-meta {
-      display: flex;
-      gap: 6px;
-      margin-top: 12px;
-      flex-wrap: wrap;
-    }
-
-    .hero-tag {
-      background: rgba(255,255,255,0.15);
-      color: rgba(255,255,255,0.9);
-      font-size: 11px;
-      font-weight: 500;
-      padding: 3px 10px;
-      border-radius: 20px;
-      backdrop-filter: blur(4px);
-    }
-
-    .hero-logo-wrap {
-      width: 80px;
-      height: 80px;
-      background: rgba(255,255,255,0.12);
-      border-radius: 16px;
-      border: 1.5px solid rgba(255,255,255,0.2);
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      flex-shrink: 0;
-      backdrop-filter: blur(8px);
-      overflow: hidden;
-    }
-
-    .hero-logo-wrap i {
-      font-size: 36px;
-      color: rgba(255,255,255,0.85);
-    }
-
-    .hero-logo-wrap img {
-      width: 100%;
-      height: 100%;
-      object-fit: cover;
-    }
-
-    /* ── Page wrapper ── */
-    .page {
-      max-width: 600px;
-      margin: 0 auto;
-      padding: 0 1rem;
-    }
-
-    /* ── Tab pill ── */
-    .tab-pill-wrap {
-      display: flex;
-      justify-content: center;
-      margin-top: -18px;
-      margin-bottom: 1.25rem;
-      position: relative;
-      z-index: 2;
-    }
-
-    .tab-pills {
-      display: flex;
-      background: #fff;
-      border-radius: 30px;
-      padding: 4px;
-      box-shadow: var(--shadow);
-      gap: 2px;
-    }
-
-    .tab-pill {
-      padding: 7px 18px;
-      border-radius: 24px;
-      font-size: 12.5px;
-      font-weight: 500;
-      cursor: pointer;
-      border: none;
-      background: transparent;
-      color: var(--text-secondary);
-      font-family: inherit;
-      transition: all 0.18s;
-    }
-
-    .tab-pill.active {
-      background: var(--teal);
-      color: #fff;
-    }
-
-    /* ── Section card ── */
-    .card {
-      background: #fff;
-      border-radius: var(--radius);
-      border: 1px solid var(--border);
-      margin-bottom: 1rem;
-      overflow: hidden;
-    }
-
-    .card-header {
-      display: flex;
-      align-items: center;
-      gap: 8px;
-      padding: 14px 16px 10px;
-      border-bottom: 1px solid var(--border);
-    }
-
-    .card-header i {
-      font-size: 16px;
-      color: var(--teal);
-    }
-
-    .card-header h2 {
-      font-size: 13px;
-      font-weight: 600;
-      color: var(--text-primary);
-      text-transform: uppercase;
-      letter-spacing: 0.05em;
-    }
-
-    .card-body {
-      padding: 14px 16px;
-    }
-
-    /* ── Company info grid ── */
-    .info-grid {
-      display: grid;
-      grid-template-columns: 1fr 1fr;
-      gap: 12px;
-    }
-
-    .info-item .label {
-      font-size: 10.5px;
-      color: var(--text-secondary);
-      font-weight: 500;
-      text-transform: uppercase;
-      letter-spacing: 0.05em;
-      margin-bottom: 3px;
-    }
-
-    .info-item .value {
-      font-size: 13.5px;
-      color: var(--text-primary);
-      font-weight: 500;
-    }
-
-    .info-item .value a {
-      color: var(--teal-mid);
-      text-decoration: none;
-    }
-
-    /* ── Emissions metric cards ── */
-    .metric-row {
-      display: grid;
-      grid-template-columns: repeat(3, 1fr);
-      gap: 10px;
-      padding: 14px 16px;
-    }
-
-    .metric-card {
-      background: var(--slate-light);
-      border-radius: 10px;
-      padding: 14px 10px;
-      text-align: center;
-      border: 1px solid var(--border);
-      position: relative;
-    }
-
-    .metric-card .m-icon {
-      width: 40px;
-      height: 40px;
-      border-radius: 50%;
-      background: #fff;
-      border: 1px solid var(--border);
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      margin: 0 auto 10px;
-    }
-
-    .metric-card .m-icon i {
-      font-size: 18px;
-    }
-
-    .metric-card .m-value {
-      font-size: 17px;
-      font-weight: 700;
-      color: var(--text-primary);
-      line-height: 1.1;
-    }
-
-    .metric-card .m-unit {
-      font-size: 10.5px;
-      color: var(--text-secondary);
-      margin-top: 3px;
-      line-height: 1.3;
-    }
-
-    .metric-card .m-plus {
-      position: absolute;
-      bottom: 6px;
-      right: 8px;
-      width: 18px;
-      height: 18px;
-      border-radius: 50%;
-      background: var(--border);
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      font-size: 12px;
-      color: var(--text-secondary);
-      cursor: pointer;
-      font-weight: 600;
-    }
-
-    /* ── Scope badges ── */
-    .scope-row {
-      display: grid;
-      grid-template-columns: repeat(3, 1fr);
-      gap: 8px;
-      padding: 0 16px 14px;
-    }
-
-    .scope-card {
-      border-radius: 9px;
-      padding: 10px 12px;
-      border: 1px solid var(--border);
-      text-align: center;
-    }
-
-    .scope-card .sc-label {
-      font-size: 10px;
-      font-weight: 600;
-      text-transform: uppercase;
-      letter-spacing: 0.06em;
-      margin-bottom: 4px;
-    }
-
-    .scope-card .sc-val {
-      font-size: 15px;
-      font-weight: 700;
-    }
-
-    .scope-card .sc-sub {
-      font-size: 10px;
-      color: var(--text-secondary);
-      margin-top: 1px;
-    }
-
-    .sc-1 { background: #fff8e6; border-color: #f5d78a; }
-    .sc-1 .sc-label { color: #946c00; }
-    .sc-1 .sc-val { color: #7a5500; }
-
-    .sc-2 { background: #e8f5ec; border-color: #9dd4ae; }
-    .sc-2 .sc-label { color: #1b6b35; }
-    .sc-2 .sc-val { color: #1b6b35; }
-
-    .sc-3 { background: #eef2ff; border-color: #a5b4fc; }
-    .sc-3 .sc-label { color: #3730a3; }
-    .sc-3 .sc-val { color: #3730a3; }
-
-    /* ── Toggle ── */
-    .toggle-header {
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      gap: 10px;
-      padding: 10px 0 4px;
-      font-size: 12.5px;
-      color: var(--text-secondary);
-    }
-
-    .tgl {
-      width: 36px;
-      height: 20px;
-      border-radius: 10px;
-      background: var(--teal-mid);
-      border: none;
-      cursor: pointer;
-      position: relative;
-    }
-
-    .tgl::after {
-      content: '';
-      position: absolute;
-      right: 3px;
-      top: 3px;
-      width: 14px;
-      height: 14px;
-      border-radius: 50%;
-      background: #fff;
-    }
-
-    /* ── KPI lists ── */
-    .kpi-list {
-      display: flex;
-      flex-direction: column;
-      gap: 0;
-    }
-
-    .kpi-item {
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      padding: 11px 16px;
-      border-bottom: 1px solid var(--border);
-    }
-
-    .kpi-item:last-child { border-bottom: none; }
-
-    .kpi-left {
-      display: flex;
-      align-items: center;
-      gap: 10px;
-    }
-
-    .kpi-icon {
-      width: 34px;
-      height: 34px;
-      border-radius: 8px;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      flex-shrink: 0;
-    }
-
-    .kpi-icon i { font-size: 17px; }
-
-    .kpi-name {
-      font-size: 13px;
-      font-weight: 500;
-      color: var(--text-primary);
-    }
-
-    .kpi-desc {
-      font-size: 11px;
-      color: var(--text-secondary);
-      margin-top: 1px;
-    }
-
-    .kpi-right {
-      text-align: right;
-    }
-
-    .kpi-val {
-      font-size: 14px;
-      font-weight: 700;
-      color: var(--text-primary);
-    }
-
-    .kpi-unit {
-      font-size: 10.5px;
-      color: var(--text-secondary);
-    }
-
-    /* ── Green practices ── */
-    .practices-grid {
-      display: grid;
-      grid-template-columns: 1fr 1fr;
-      gap: 10px;
-      padding: 14px 16px;
-    }
-
-    .practice-card {
-      border-radius: 10px;
-      overflow: hidden;
-      border: 1px solid var(--border);
-      background: var(--slate-light);
-    }
-
-    .practice-img {
-      height: 72px;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      font-size: 28px;
-      position: relative;
-    }
-
-    .practice-img .img-label {
-      position: absolute;
-      bottom: 0; left: 0; right: 0;
-      background: linear-gradient(transparent, rgba(0,0,0,0.55));
-      color: #fff;
-      font-size: 11px;
-      font-weight: 600;
-      padding: 6px 8px 4px;
-    }
-
-    .practice-body {
-      padding: 8px 10px 10px;
-    }
-
-    .practice-body p {
-      font-size: 11.5px;
-      color: var(--text-secondary);
-      line-height: 1.5;
-    }
-
-    /* ── Certificates ── */
-    .cert-list {
-      display: flex;
-      flex-direction: column;
-      gap: 0;
-    }
-
-    .cert-item {
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      padding: 10px 16px;
-      border-bottom: 1px solid var(--border);
-    }
-
-    .cert-item:last-child { border-bottom: none; }
-
-    .cert-left {
-      display: flex;
-      align-items: center;
-      gap: 10px;
-    }
-
-    .cert-icon {
-      width: 32px; height: 32px;
-      background: var(--teal-light);
-      border-radius: 8px;
-      display: flex; align-items: center; justify-content: center;
-    }
-
-    .cert-icon i { font-size: 16px; color: var(--teal); }
-
-    .cert-name { font-size: 13px; font-weight: 500; color: var(--text-primary); }
-    .cert-issuer { font-size: 11px; color: var(--text-secondary); margin-top: 1px; }
-
-    .cert-badge {
-      font-size: 10.5px;
-      font-weight: 600;
-      padding: 3px 8px;
-      border-radius: 12px;
-    }
-
-    .cert-badge.active { background: var(--green-light); color: var(--green); }
-    .cert-badge.pending { background: #fff8e1; color: #92681a; }
-
-    /* ── Location & contact ── */
-    .loc-grid {
-      display: grid;
-      grid-template-columns: 1fr 1fr;
-      gap: 12px;
-      padding: 14px 16px;
-    }
-
-    .loc-block .loc-label {
-      font-size: 10.5px;
-      color: var(--text-secondary);
-      text-transform: uppercase;
-      letter-spacing: 0.05em;
-      font-weight: 600;
-      margin-bottom: 4px;
-    }
-
-    .loc-block p {
-      font-size: 12.5px;
-      color: var(--text-primary);
-      line-height: 1.55;
-    }
-
-    .loc-block a {
-      color: var(--teal-mid);
-      text-decoration: none;
-      font-size: 12.5px;
-    }
-
-    /* ── LCA Config strip ── */
-    .lca-strip {
-      display: grid;
-      grid-template-columns: repeat(3, 1fr);
-      gap: 0;
-      border-top: 1px solid var(--border);
-    }
-
-    .lca-item {
-      padding: 12px 14px;
-      border-right: 1px solid var(--border);
-      text-align: center;
-    }
-
-    .lca-item:last-child { border-right: none; }
-
-    .lca-item .ll { font-size: 10px; color: var(--text-secondary); text-transform: uppercase; letter-spacing: 0.05em; font-weight: 600; margin-bottom: 3px; }
-    .lca-item .lv { font-size: 13px; font-weight: 600; color: var(--text-primary); }
-
-    /* ── About section ── */
-    .about-block {
-      padding: 14px 16px;
-    }
-
-    .about-block h3 {
-      font-size: 11px;
-      font-weight: 700;
-      color: var(--teal);
-      text-transform: uppercase;
-      letter-spacing: 0.06em;
-      margin-bottom: 6px;
-    }
-
-    .about-block p {
-      font-size: 12.5px;
-      color: var(--text-secondary);
-      line-height: 1.65;
-    }
-
-    .about-divider {
-      height: 1px;
-      background: var(--border);
-      margin: 12px 0;
-    }
-
-    /* ── Tab panels ── */
-    .tab-panel { display: none; }
-    .tab-panel.active { display: block; }
-
-    /* ── Powered by ── */
-    .powered {
-      text-align: center;
-      margin-top: 1.5rem;
-      font-size: 11.5px;
-      color: var(--text-secondary);
-    }
-
-    .powered span {
-      font-weight: 600;
-      color: var(--teal);
-    }
-
-    /* ── Bottom nav ── */
-    .bottom-nav {
-      position: fixed;
-      bottom: 0; left: 0; right: 0;
-      background: #fff;
-      border-top: 1px solid var(--border);
-      display: flex;
-      justify-content: center;
-      gap: 6px;
-      padding: 10px 1rem;
-      z-index: 10;
-      box-shadow: 0 -2px 12px rgba(0,0,0,0.06);
-    }
-
-    .nav-btn {
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      gap: 3px;
-      background: none;
-      border: none;
-      cursor: pointer;
-      padding: 6px 14px;
-      border-radius: 10px;
-      color: var(--text-secondary);
-      font-family: inherit;
-      font-size: 10px;
-      transition: all 0.15s;
-    }
-
-    .nav-btn i { font-size: 20px; }
-
-    .nav-btn.active {
-      background: var(--teal);
-      color: #fff;
-    }
-
-    /* ── Chart bar ── */
-    .bar-chart {
-      padding: 10px 16px 14px;
-    }
-
-    .bar-row {
-      display: flex;
-      align-items: center;
-      gap: 10px;
-      margin-bottom: 8px;
-    }
-
-    .bar-label {
-      font-size: 11px;
-      color: var(--text-secondary);
-      width: 80px;
-      flex-shrink: 0;
-      text-align: right;
-    }
-
-    .bar-track {
-      flex: 1;
-      height: 10px;
-      background: var(--slate-light);
-      border-radius: 5px;
-      overflow: hidden;
-    }
-
-    .bar-fill {
-      height: 100%;
-      border-radius: 5px;
-      transition: width 0.8s ease;
-    }
-
-    .bar-val {
-      font-size: 11px;
-      font-weight: 600;
-      color: var(--text-primary);
-      width: 55px;
-      flex-shrink: 0;
-    }
-
-    /* ── Verified badge ── */
-    .verified-row {
-      display: flex;
-      align-items: center;
-      gap: 6px;
-      padding: 8px 16px;
-      background: var(--green-light);
-      border-top: 1px solid #c3e6cb;
-    }
-
-    .verified-row i { font-size: 14px; color: var(--green); }
-    .verified-row span { font-size: 11.5px; color: var(--green); font-weight: 500; }
-
-    /* ── Privacy link ── */
-    .privacy-link {
-      text-align: center;
-      padding: 8px;
-      font-size: 11.5px;
-    }
-
-    .privacy-link a { color: var(--teal-mid); text-decoration: none; }
   </style>
 </head>
 <body>
+<div class="pp-wrap">
 
-  <!-- Hero Banner -->
-  <div class="hero">
-    <div class="hero-inner">
-      <div class="hero-text">
-        <div class="brand"><%= company.brand %></div>
+  <!-- ================= Hero header ================= -->
+  <div class="pp-card">
+    <div class="pp-hero">
+      <div class="pp-hero-text">
+        <div class="pp-hero-brand"><%= company.brand %></div>
         <h1><%= company.displayName %></h1>
         <p><%= company.tagline %></p>
-        <div class="hero-meta">
+        <div class="pp-hero-tags">
           <% company.tags.forEach(function(tag) { %>
-            <span class="hero-tag"><%= tag %></span>
+            <span class="pp-hero-tag"><%= tag %></span>
           <% }); %>
         </div>
       </div>
-      <div class="hero-logo-wrap">
+      <div class="pp-hero-logo">
         <% if (company.logoUrl) { %>
           <img src="<%= company.logoUrl %>" alt="<%= company.name %> logo" />
         <% } else { %>
@@ -740,495 +252,303 @@
     </div>
   </div>
 
-  <div class="page">
+  <!-- ================= Tab pills ================= -->
+  <div class="pp-tab-wrap">
+    <div class="pp-tabs">
+      <button class="pp-tab active" onclick="ppSwitchTab('footprint', this)">Carbon Footprint</button>
+      <button class="pp-tab" onclick="ppSwitchTab('profile', this)">Company Profile</button>
+      <button class="pp-tab" onclick="ppSwitchTab('practices', this)">Sustainability</button>
+    </div>
+  </div>
 
-    <!-- Tab Pills -->
-    <div class="tab-pill-wrap">
-      <div class="tab-pills">
-        <button class="tab-pill active" onclick="switchTab('footprint', this)">Carbon Footprint</button>
-        <button class="tab-pill" onclick="switchTab('profile', this)">Company Profile</button>
-        <button class="tab-pill" onclick="switchTab('practices', this)">Sustainability</button>
+  <!-- ══════════════ TAB: Carbon Footprint ══════════════ -->
+  <div class="pp-panel active" id="pp-tab-footprint">
+
+    <div class="pp-toggle-row">
+      <span>Scientific</span>
+      <button class="pp-toggle" aria-label="Toggle view"></button>
+      <span>Equivalences</span>
+    </div>
+
+    <!-- Total emissions -->
+    <div class="pp-card">
+      <div class="pp-header"><i class="ti ti-cloud"></i><h2>Total Emissions — <%= emissions.reportingYear %></h2></div>
+      <div class="pp-stats3">
+        <div class="pp-stat-tile">
+          <div class="pp-stat-icon"><i class="ti ti-flame" style="color:#e57c2e"></i></div>
+          <div class="pp-stat-value"><%= emissions.total.toFixed(2) %></div>
+          <div class="pp-stat-unit">tCO₂e<br>Total Emissions</div>
+        </div>
+        <div class="pp-stat-tile">
+          <div class="pp-stat-icon"><i class="ti ti-bolt" style="color:var(--pp-accent)"></i></div>
+          <div class="pp-stat-value"><%= emissions.energy.toFixed(2) %></div>
+          <div class="pp-stat-unit">tCO₂e<br>Energy</div>
+        </div>
+        <div class="pp-stat-tile">
+          <div class="pp-stat-icon"><i class="ti ti-droplet" style="color:#3b82f6"></i></div>
+          <div class="pp-stat-value"><%= emissions.water.toFixed(2) %></div>
+          <div class="pp-stat-unit">tCO₂e<br>Water</div>
+        </div>
+      </div>
+      <div class="pp-scope-row">
+        <div class="pp-scope-tile pp-scope-1">
+          <div class="pp-scope-label">Scope 1</div>
+          <div class="pp-scope-val"><%= emissions.scope1.toFixed(2) %></div>
+          <div class="pp-scope-sub">tCO₂e · Direct</div>
+        </div>
+        <div class="pp-scope-tile pp-scope-2">
+          <div class="pp-scope-label">Scope 2</div>
+          <div class="pp-scope-val"><%= emissions.scope2.toFixed(2) %></div>
+          <div class="pp-scope-sub">tCO₂e · Indirect</div>
+        </div>
+        <div class="pp-scope-tile pp-scope-3">
+          <div class="pp-scope-label">Scope 3</div>
+          <div class="pp-scope-val"><%= emissions.scope3.toFixed(2) %></div>
+          <div class="pp-scope-sub">tCO₂e · Value chain</div>
+        </div>
       </div>
     </div>
 
-    <!-- ══ TAB: Carbon Footprint ══ -->
-    <div class="tab-panel active" id="tab-footprint">
-
-      <!-- Toggle -->
-      <div class="toggle-header">
-        <span>Scientific</span>
-        <button class="tgl" aria-label="Toggle view"></button>
-        <span>Equivalences</span>
-      </div>
-
-      <!-- Main Emission Metrics -->
-      <div class="card" style="margin-top:10px">
-        <div class="card-header">
-          <i class="ti ti-cloud"></i>
-          <h2>Total Emissions — <%= emissions.reportingYear %></h2>
-        </div>
-        <div class="metric-row">
-          <div class="metric-card">
-            <div class="m-icon"><i class="ti ti-flame" style="color:#e57c2e"></i></div>
-            <div class="m-value"><%= emissions.total.toFixed(2) %></div>
-            <div class="m-unit">tCO₂e<br>Total Emissions</div>
-            <div class="m-plus">+</div>
-          </div>
-          <div class="metric-card">
-            <div class="m-icon"><i class="ti ti-bolt" style="color:#2e9e9e"></i></div>
-            <div class="m-value"><%= emissions.energy.toFixed(2) %></div>
-            <div class="m-unit">tCO₂e<br>Energy</div>
-            <div class="m-plus">+</div>
-          </div>
-          <div class="metric-card">
-            <div class="m-icon"><i class="ti ti-droplet" style="color:#3b82f6"></i></div>
-            <div class="m-value"><%= emissions.water.toFixed(2) %></div>
-            <div class="m-unit">tCO₂e<br>Water</div>
-            <div class="m-plus">+</div>
-          </div>
-        </div>
-
-        <!-- Scope breakdown -->
-        <div class="scope-row">
-          <div class="scope-card sc-1">
-            <div class="sc-label">Scope 1</div>
-            <div class="sc-val"><%= emissions.scope1.toFixed(2) %></div>
-            <div class="sc-sub">tCO₂e · Direct</div>
-          </div>
-          <div class="scope-card sc-2">
-            <div class="sc-label">Scope 2</div>
-            <div class="sc-val"><%= emissions.scope2.toFixed(2) %></div>
-            <div class="sc-sub">tCO₂e · Indirect</div>
-          </div>
-          <div class="scope-card sc-3">
-            <div class="sc-label">Scope 3</div>
-            <div class="sc-val"><%= emissions.scope3.toFixed(2) %></div>
-            <div class="sc-sub">tCO₂e · Value chain</div>
-          </div>
-        </div>
-      </div>
-
-      <!-- Emissions by Source -->
-      <div class="card">
-        <div class="card-header">
-          <i class="ti ti-chart-bar"></i>
-          <h2>Emissions by Activity</h2>
-        </div>
-        <% if (activities && activities.length) { %>
-          <% var maxValue = Math.max.apply(null, activities.map(function(a){ return a.value; })); %>
-          <div class="bar-chart">
-            <% activities.forEach(function(act) { %>
-              <div class="bar-row">
-                <span class="bar-label"><%= act.barLabel || act.name %></span>
-                <div class="bar-track"><div class="bar-fill" style="width:<%= Math.round((act.value / maxValue) * 100) %>%;background:<%= act.barColor || '#1a6b6b' %>"></div></div>
-                <span class="bar-val"><%= act.value.toFixed(2) %> t</span>
-              </div>
-            <% }); %>
-          </div>
-          <div class="kpi-list">
-            <% activities.forEach(function(act) { %>
-              <div class="kpi-item">
-                <div class="kpi-left">
-                  <div class="kpi-icon" style="background:<%= act.iconBg || '#fff8e6' %>"><i class="ti <%= act.icon || 'ti-flame' %>" style="color:<%= act.iconColor || '#a07000' %>"></i></div>
-                  <div>
-                    <div class="kpi-name"><%= act.name %></div>
-                    <div class="kpi-desc"><%= act.scope %> · <%= act.category %> · <%= act.emissionFactor %> EF</div>
-                  </div>
-                </div>
-                <div class="kpi-right">
-                  <div class="kpi-val"><%= act.value.toFixed(2) %></div>
-                  <div class="kpi-unit">tCO₂e</div>
-                </div>
-              </div>
-            <% }); %>
-          </div>
-        <% } else { %>
-          <div class="card-body"><p style="font-size:12.5px;color:var(--text-secondary)">No activity-level emissions data available.</p></div>
-        <% } %>
-      </div>
-
-      <!-- Decarbonization -->
-      <div class="card">
-        <div class="card-header">
-          <i class="ti ti-leaf"></i>
-          <h2>Decarbonization & Net Zero</h2>
-        </div>
-        <div class="kpi-list">
-          <div class="kpi-item">
-            <div class="kpi-left">
-              <div class="kpi-icon" style="background:#e8f5ec"><i class="ti ti-target" style="color:#2d8a4e"></i></div>
-              <div>
-                <div class="kpi-name">Decarbonization Impact</div>
-                <div class="kpi-desc">Reduction achieved this reporting period</div>
-              </div>
+    <!-- Emissions by activity -->
+    <div class="pp-card">
+      <div class="pp-header"><i class="ti ti-chart-bar"></i><h2>Emissions by Activity</h2></div>
+      <% if (activities && activities.length) { %>
+        <% var maxValue = Math.max.apply(null, activities.map(function(a){ return a.value; })); %>
+        <div class="pp-bar-block">
+          <% activities.forEach(function(act) { %>
+            <div class="pp-bar-row">
+              <span class="pp-bar-label"><%= act.barLabel || act.name %></span>
+              <div class="pp-bar-track"><div class="pp-bar-fill" style="width:<%= Math.round((act.value / maxValue) * 100) %>%;background:<%= act.barColor || '#14B8A6' %>"></div></div>
+              <span class="pp-bar-val"><%= act.value.toFixed(2) %> t</span>
             </div>
-            <div class="kpi-right">
-              <div class="kpi-val"><%= decarbonization.impact.toFixed(2) %></div>
-              <div class="kpi-unit">tCO₂e</div>
-            </div>
-          </div>
-          <div class="kpi-item">
-            <div class="kpi-left">
-              <div class="kpi-icon" style="background:#e8f5ec"><i class="ti ti-calendar-check" style="color:#2d8a4e"></i></div>
-              <div>
-                <div class="kpi-name">Net Zero Target Year</div>
-                <div class="kpi-desc">Committed reduction milestone</div>
-              </div>
-            </div>
-            <div class="kpi-right">
-              <div class="kpi-val"><%= decarbonization.netZeroYear || '—' %></div>
-              <div class="kpi-unit">year</div>
-            </div>
-          </div>
+          <% }); %>
         </div>
-      </div>
-
+        <% activities.forEach(function(act) { %>
+          <div class="pp-kpi-row">
+            <div class="pp-kpi-icon" style="background:<%= act.iconBg || '#fff8e6' %>"><i class="ti <%= act.icon || 'ti-flame' %>" style="color:<%= act.iconColor || '#a07000' %>"></i></div>
+            <div>
+              <div class="pp-kpi-name"><%= act.name %></div>
+              <div class="pp-kpi-desc"><%= act.scope %> · <%= act.category %> · <%= act.emissionFactor %> EF</div>
+            </div>
+            <div class="pp-kpi-right"><div class="pp-kpi-val"><%= act.value.toFixed(2) %></div><div class="pp-kpi-unit">tCO₂e</div></div>
+          </div>
+        <% }); %>
+      <% } else { %>
+        <div class="pp-card-body"><p style="font-size:12.5px;color:var(--pp-muted)">No activity-level emissions data available.</p></div>
+      <% } %>
     </div>
 
-    <!-- ══ TAB: Company Profile ══ -->
-    <div class="tab-panel" id="tab-profile">
-
-      <!-- Corporate Identity -->
-      <div class="card" style="margin-top:10px">
-        <div class="card-header">
-          <i class="ti ti-building"></i>
-          <h2>Corporate Information</h2>
-        </div>
-        <div class="card-body">
-          <div class="info-grid">
-            <div class="info-item">
-              <div class="label">Company Name</div>
-              <div class="value"><%= company.name %></div>
-            </div>
-            <div class="info-item">
-              <div class="label">Industry</div>
-              <div class="value"><%= company.industry %></div>
-            </div>
-            <div class="info-item">
-              <div class="label">Company Type</div>
-              <div class="value"><%= company.companyType %></div>
-            </div>
-            <div class="info-item">
-              <div class="label">Registered</div>
-              <div class="value"><%= company.registeredDate %></div>
-            </div>
-            <div class="info-item">
-              <div class="label">Currency</div>
-              <div class="value"><%= company.currency %></div>
-            </div>
-            <div class="info-item">
-              <div class="label">Email</div>
-              <div class="value"><a href="mailto:<%= company.email %>"><%= company.email %></a></div>
-            </div>
-            <div class="info-item">
-              <div class="label">Phone</div>
-              <div class="value"><%= company.phone %></div>
-            </div>
-            <div class="info-item">
-              <div class="label">Website</div>
-              <div class="value"><a href="<%= company.websiteUrl || '#' %>"><%= company.legalName || company.name %></a></div>
-            </div>
-          </div>
-        </div>
+    <!-- Decarbonization -->
+    <div class="pp-card">
+      <div class="pp-header"><i class="ti ti-leaf"></i><h2>Decarbonization & Net Zero</h2></div>
+      <div class="pp-kpi-row">
+        <div class="pp-kpi-icon" style="background:#E8F5EC"><i class="ti ti-target" style="color:#2d8a4e"></i></div>
+        <div><div class="pp-kpi-name">Decarbonization Impact</div><div class="pp-kpi-desc">Reduction achieved this reporting period</div></div>
+        <div class="pp-kpi-right"><div class="pp-kpi-val"><%= decarbonization.impact.toFixed(2) %></div><div class="pp-kpi-unit">tCO₂e</div></div>
       </div>
-
-      <!-- Location -->
-      <div class="card">
-        <div class="card-header">
-          <i class="ti ti-map-pin"></i>
-          <h2>Location</h2>
-        </div>
-        <div class="loc-grid">
-          <div class="loc-block">
-            <div class="loc-label">Address</div>
-            <p><%- company.addressLines.join('<br>') %></p>
-          </div>
-          <div class="loc-block">
-            <div class="loc-label">Timezone</div>
-            <p><%= company.timezoneLabel %></p>
-          </div>
-        </div>
+      <div class="pp-kpi-row">
+        <div class="pp-kpi-icon" style="background:#E8F5EC"><i class="ti ti-calendar-check" style="color:#2d8a4e"></i></div>
+        <div><div class="pp-kpi-name">Net Zero Target Year</div><div class="pp-kpi-desc">Committed reduction milestone</div></div>
+        <div class="pp-kpi-right"><div class="pp-kpi-val"><%= decarbonization.netZeroYear || '—' %></div><div class="pp-kpi-unit">year</div></div>
       </div>
-
-      <!-- LCA Configuration -->
-      <div class="card">
-        <div class="card-header">
-          <i class="ti ti-settings"></i>
-          <h2>Sustainability & LCA Configuration</h2>
-        </div>
-        <div class="lca-strip">
-          <div class="lca-item">
-            <div class="ll">Reporting Year</div>
-            <div class="lv"><%= lcaConfig.reportingYear || '—' %></div>
-          </div>
-          <div class="lca-item">
-            <div class="ll">Base Year</div>
-            <div class="lv"><%= lcaConfig.baseYear || '—' %></div>
-          </div>
-          <div class="lca-item">
-            <div class="ll">Net Zero Target</div>
-            <div class="lv"><%= lcaConfig.netZeroTarget || '—' %></div>
-          </div>
-        </div>
-        <div class="lca-strip" style="border-top:1px solid var(--border)">
-          <div class="lca-item">
-            <div class="ll">LCA Goal</div>
-            <div class="lv"><%= lcaConfig.lcaGoal || '—' %></div>
-          </div>
-          <div class="lca-item">
-            <div class="ll">EF Region</div>
-            <div class="lv"><%= lcaConfig.efRegion || '—' %></div>
-          </div>
-          <div class="lca-item">
-            <div class="ll">Commitment</div>
-            <div class="lv"><%= lcaConfig.commitment || '—' %></div>
-          </div>
-        </div>
-      </div>
-
-      <!-- Verification -->
-      <div class="card">
-        <div class="card-header">
-          <i class="ti ti-shield-check"></i>
-          <h2>Sustainability Assurance</h2>
-        </div>
-        <div class="kpi-list">
-          <div class="kpi-item">
-            <div class="kpi-left">
-              <div class="kpi-icon" style="background:#e6f4f4"><i class="ti ti-certificate" style="color:#1a6b6b"></i></div>
-              <div>
-                <div class="kpi-name">Verifier Organization</div>
-                <div class="kpi-desc">Third-party verification body</div>
-              </div>
-            </div>
-            <div class="kpi-right"><div class="kpi-val" style="font-size:12px;color:var(--text-secondary)"><%= assurance.verifierOrg || 'Not assigned' %></div></div>
-          </div>
-          <div class="kpi-item">
-            <div class="kpi-left">
-              <div class="kpi-icon" style="background:#e8f5ec"><i class="ti ti-check" style="color:#2d8a4e"></i></div>
-              <div>
-                <div class="kpi-name">Assurance & QC Organization</div>
-                <div class="kpi-desc">Quality check and assurance body</div>
-              </div>
-            </div>
-            <div class="kpi-right"><div class="kpi-val" style="font-size:12px;color:var(--text-secondary)"><%= assurance.qcOrg || 'Not assigned' %></div></div>
-          </div>
-        </div>
-      </div>
-
-      <!-- Certificates -->
-      <div class="card">
-        <div class="card-header">
-          <i class="ti ti-award"></i>
-          <h2>Company Certificates</h2>
-        </div>
-        <% if (certificates && certificates.length) { %>
-          <div class="cert-list">
-            <% certificates.forEach(function(cert) { %>
-              <div class="cert-item">
-                <div class="cert-left">
-                  <div class="cert-icon"><i class="ti ti-certificate"></i></div>
-                  <div>
-                    <div class="cert-name"><%= cert.name %></div>
-                    <div class="cert-issuer"><%= cert.issuer %></div>
-                  </div>
-                </div>
-                <span class="cert-badge <%= cert.status === 'Active' ? 'active' : 'pending' %>"><%= cert.status %></span>
-              </div>
-            <% }); %>
-          </div>
-        <% } else { %>
-          <div class="card-body"><p style="font-size:12.5px;color:var(--text-secondary)">No certificates on record.</p></div>
-        <% } %>
-        <div class="verified-row">
-          <i class="ti ti-info-circle"></i>
-          <span>Certificate details are self-reported and pending third-party verification.</span>
-        </div>
-      </div>
-
-      <!-- About -->
-      <div class="card">
-        <div class="card-header">
-          <i class="ti ti-file-text"></i>
-          <h2>Business Overview</h2>
-        </div>
-        <div class="about-block">
-          <h3>About Company</h3>
-          <p><%= about.description %></p>
-          <div class="about-divider"></div>
-          <h3>Products & Services</h3>
-          <p><%= about.productsServices %></p>
-        </div>
-      </div>
-
     </div>
-
-    <!-- ══ TAB: Sustainability ══ -->
-    <div class="tab-panel" id="tab-practices">
-
-      <!-- Green KPIs -->
-      <div class="card" style="margin-top:10px">
-        <div class="card-header">
-          <i class="ti ti-leaf"></i>
-          <h2>Sustainability Metrics</h2>
-        </div>
-        <div class="kpi-list">
-          <div class="kpi-item">
-            <div class="kpi-left">
-              <div class="kpi-icon" style="background:#e8f5ec"><i class="ti ti-droplet" style="color:#2d8a4e"></i></div>
-              <div>
-                <div class="kpi-name">Water Footprint</div>
-                <div class="kpi-desc">Total water consumed across operations</div>
-              </div>
-            </div>
-            <div class="kpi-right"><div class="kpi-val"><%= sustainabilityMetrics.waterFootprint.toFixed(2) %></div><div class="kpi-unit">tCO₂e</div></div>
-          </div>
-          <div class="kpi-item">
-            <div class="kpi-left">
-              <div class="kpi-icon" style="background:#fff0e6"><i class="ti ti-trash" style="color:#c05c00"></i></div>
-              <div>
-                <div class="kpi-name">Waste Footprint</div>
-                <div class="kpi-desc">Waste generated and disposal impact</div>
-              </div>
-            </div>
-            <div class="kpi-right"><div class="kpi-val"><%= sustainabilityMetrics.wasteFootprint.toFixed(2) %></div><div class="kpi-unit">tCO₂e</div></div>
-          </div>
-          <div class="kpi-item">
-            <div class="kpi-left">
-              <div class="kpi-icon" style="background:#eef2ff"><i class="ti ti-users" style="color:#3730a3"></i></div>
-              <div>
-                <div class="kpi-name">Employee Operations</div>
-                <div class="kpi-desc">Commute and business travel impact</div>
-              </div>
-            </div>
-            <div class="kpi-right"><div class="kpi-val"><%= sustainabilityMetrics.employeeOps.toFixed(2) %></div><div class="kpi-unit">tCO₂e</div></div>
-          </div>
-          <div class="kpi-item">
-            <div class="kpi-left">
-              <div class="kpi-icon" style="background:#e8f5ec"><i class="ti ti-solar-panel" style="color:#2d8a4e"></i></div>
-              <div>
-                <div class="kpi-name">Renewable Energy Use</div>
-                <div class="kpi-desc">Share of renewables in total energy mix</div>
-              </div>
-            </div>
-            <div class="kpi-right"><div class="kpi-val"><%= sustainabilityMetrics.renewableEnergyPct != null ? sustainabilityMetrics.renewableEnergyPct : '—' %></div><div class="kpi-unit">%</div></div>
-          </div>
-        </div>
-      </div>
-
-      <!-- Green Practices -->
-      <div class="card">
-        <div class="card-header">
-          <i class="ti ti-recycle"></i>
-          <h2>Green Practices & Waste Solutions</h2>
-        </div>
-        <% if (greenPractices && greenPractices.length) { %>
-          <div class="practices-grid">
-            <% greenPractices.forEach(function(practice) { %>
-              <div class="practice-card">
-                <div class="practice-img" style="background:linear-gradient(135deg,<%= practice.gradientFrom %>,<%= practice.gradientTo %>)">
-                  <i class="ti <%= practice.icon %>" style="color:rgba(255,255,255,0.7)"></i>
-                  <div class="img-label"><%= practice.title %></div>
-                </div>
-                <div class="practice-body">
-                  <p><%= practice.description %></p>
-                </div>
-              </div>
-            <% }); %>
-          </div>
-        <% } else { %>
-          <div class="card-body"><p style="font-size:12.5px;color:var(--text-secondary)">No green practices recorded yet.</p></div>
-        <% } %>
-      </div>
-
-      <!-- Verification -->
-      <div class="card">
-        <div class="card-header">
-          <i class="ti ti-shield-check"></i>
-          <h2>Data Verification</h2>
-        </div>
-        <div class="verified-row" style="border-top:none">
-          <i class="ti ti-circle-check"></i>
-          <span>Carbon data sourced from <%= dataVerification.dataSource %> · <%= emissions.reportingYear %></span>
-        </div>
-        <div class="kpi-list">
-          <div class="kpi-item">
-            <div class="kpi-left">
-              <div class="kpi-icon" style="background:#e6f4f4"><i class="ti ti-database" style="color:#1a6b6b"></i></div>
-              <div>
-                <div class="kpi-name">Data Source</div>
-                <div class="kpi-desc"><%= dataVerification.dataSource %></div>
-              </div>
-            </div>
-            <div class="kpi-right"><div class="kpi-val" style="font-size:11.5px;color:var(--teal-mid)"><%= dataVerification.verified ? 'Verified' : 'Unverified' %></div></div>
-          </div>
-          <div class="kpi-item">
-            <div class="kpi-left">
-              <div class="kpi-icon" style="background:#e8f5ec"><i class="ti ti-calendar" style="color:#2d8a4e"></i></div>
-              <div>
-                <div class="kpi-name">Reporting Period</div>
-                <div class="kpi-desc">Full Year · <%= emissions.reportingYear %></div>
-              </div>
-            </div>
-            <div class="kpi-right"><div class="kpi-val" style="font-size:11.5px"><%= dataVerification.reportingPeriodLabel %></div></div>
-          </div>
-        </div>
-      </div>
-
-    </div>
-
-    <div class="privacy-link"><a href="<%= privacyPolicyUrl || '#' %>">Privacy Policy</a></div>
-    <div class="powered">Powered by <span><%= poweredByLabel || 'GreenStep LCA' %></span></div>
 
   </div>
 
-  <!-- Bottom Nav -->
-  <div class="bottom-nav">
-    <button class="nav-btn active" onclick="switchTab('footprint', this); switchNav(this)">
-      <i class="ti ti-home"></i>
-      Home
-    </button>
-    <button class="nav-btn" onclick="switchTab('profile', this); switchNav(this)">
-      <i class="ti ti-building"></i>
-      Profile
-    </button>
-    <button class="nav-btn" onclick="switchTab('practices', this); switchNav(this)">
-      <i class="ti ti-leaf"></i>
-      Sustainability
-    </button>
+  <!-- ══════════════ TAB: Company Profile ══════════════ -->
+  <div class="pp-panel" id="pp-tab-profile">
+
+    <!-- Corporate information -->
+    <div class="pp-card">
+      <div class="pp-header"><i class="ti ti-building"></i><h2>Corporate Information</h2></div>
+      <div class="pp-info-grid">
+        <div><div class="pp-meta-label">Company Name</div><div class="pp-meta-value"><%= company.name %></div></div>
+        <div><div class="pp-meta-label">Industry</div><div class="pp-meta-value"><%= company.industry %></div></div>
+        <div><div class="pp-meta-label">Company Type</div><div class="pp-meta-value"><%= company.companyType %></div></div>
+        <div><div class="pp-meta-label">Registered</div><div class="pp-meta-value"><%= company.registeredDate %></div></div>
+        <div><div class="pp-meta-label">Currency</div><div class="pp-meta-value"><%= company.currency %></div></div>
+        <div><div class="pp-meta-label">Email</div><div class="pp-meta-value"><a href="mailto:<%= company.email %>"><%= company.email %></a></div></div>
+        <div><div class="pp-meta-label">Phone</div><div class="pp-meta-value"><%= company.phone %></div></div>
+        <div><div class="pp-meta-label">Website</div><div class="pp-meta-value"><a href="<%= company.websiteUrl || '#' %>"><%= company.legalName || company.name %></a></div></div>
+      </div>
+    </div>
+
+    <!-- Location -->
+    <div class="pp-card">
+      <div class="pp-header"><i class="ti ti-map-pin"></i><h2>Location</h2></div>
+      <div class="pp-loc-grid">
+        <div class="pp-loc-block"><div class="pp-meta-label">Address</div><p><%- company.addressLines.join('<br>') %></p></div>
+        <div class="pp-loc-block"><div class="pp-meta-label">Timezone</div><p><%= company.timezoneLabel %></p></div>
+      </div>
+    </div>
+
+    <!-- LCA configuration -->
+    <div class="pp-card">
+      <div class="pp-header"><i class="ti ti-settings"></i><h2>Sustainability & LCA Configuration</h2></div>
+      <div class="pp-strip">
+        <div class="pp-strip-item"><div class="pp-strip-label">Reporting Year</div><div class="pp-strip-val"><%= lcaConfig.reportingYear || '—' %></div></div>
+        <div class="pp-strip-item"><div class="pp-strip-label">Base Year</div><div class="pp-strip-val"><%= lcaConfig.baseYear || '—' %></div></div>
+        <div class="pp-strip-item"><div class="pp-strip-label">Net Zero Target</div><div class="pp-strip-val"><%= lcaConfig.netZeroTarget || '—' %></div></div>
+      </div>
+      <div class="pp-strip">
+        <div class="pp-strip-item"><div class="pp-strip-label">LCA Goal</div><div class="pp-strip-val"><%= lcaConfig.lcaGoal || '—' %></div></div>
+        <div class="pp-strip-item"><div class="pp-strip-label">EF Region</div><div class="pp-strip-val"><%= lcaConfig.efRegion || '—' %></div></div>
+        <div class="pp-strip-item"><div class="pp-strip-label">Commitment</div><div class="pp-strip-val"><%= lcaConfig.commitment || '—' %></div></div>
+      </div>
+    </div>
+
+    <!-- Assurance -->
+    <div class="pp-card">
+      <div class="pp-header"><i class="ti ti-shield-check"></i><h2>Sustainability Assurance</h2></div>
+      <div class="pp-kpi-row">
+        <div class="pp-kpi-icon" style="background:#E6F4F4"><i class="ti ti-certificate" style="color:var(--pp-primary)"></i></div>
+        <div><div class="pp-kpi-name">Verifier Organization</div><div class="pp-kpi-desc">Third-party verification body</div></div>
+        <div class="pp-kpi-right"><div class="pp-kpi-val" style="font-size:12px;color:var(--pp-muted)"><%= assurance.verifierOrg || 'Not assigned' %></div></div>
+      </div>
+      <div class="pp-kpi-row">
+        <div class="pp-kpi-icon" style="background:#E8F5EC"><i class="ti ti-check" style="color:#2d8a4e"></i></div>
+        <div><div class="pp-kpi-name">Assurance & QC Organization</div><div class="pp-kpi-desc">Quality check and assurance body</div></div>
+        <div class="pp-kpi-right"><div class="pp-kpi-val" style="font-size:12px;color:var(--pp-muted)"><%= assurance.qcOrg || 'Not assigned' %></div></div>
+      </div>
+    </div>
+
+    <!-- Certificates -->
+    <div class="pp-card">
+      <div class="pp-header"><i class="ti ti-award"></i><h2>Company Certificates</h2></div>
+      <% if (certificates && certificates.length) { %>
+        <% certificates.forEach(function(cert) { %>
+          <div class="pp-cert-row">
+            <div class="pp-cert-icon"><i class="ti ti-certificate"></i></div>
+            <div><div class="pp-cert-name"><%= cert.name %></div><div class="pp-cert-issuer"><%= cert.issuer %></div></div>
+            <span class="pp-cert-pill <%= cert.status === 'Active' ? 'active' : 'pending' %>"><%= cert.status %></span>
+          </div>
+        <% }); %>
+      <% } else { %>
+        <div class="pp-card-body"><p style="font-size:12.5px;color:var(--pp-muted)">No certificates on record.</p></div>
+      <% } %>
+      <div class="pp-verified-row"><i class="ti ti-info-circle"></i><span>Certificate details are self-reported and pending third-party verification.</span></div>
+    </div>
+
+    <!-- About -->
+    <div class="pp-card">
+      <div class="pp-header"><i class="ti ti-file-text"></i><h2>Business Overview</h2></div>
+      <div class="pp-card-body pp-about">
+        <h3>About Company</h3>
+        <p><%= about.description %></p>
+        <div class="pp-about-divider"></div>
+        <h3>Products & Services</h3>
+        <p><%= about.productsServices %></p>
+      </div>
+    </div>
+
   </div>
 
-  <script>
-    function switchTab(name, btn) {
-      document.querySelectorAll('.tab-panel').forEach(p => p.classList.remove('active'));
-      document.getElementById('tab-' + name).classList.add('active');
-      document.querySelectorAll('.tab-pill').forEach(p => p.classList.remove('active'));
-      const pillMap = { footprint: 0, profile: 1, practices: 2 };
-      document.querySelectorAll('.tab-pill')[pillMap[name]].classList.add('active');
-    }
+  <!-- ══════════════ TAB: Sustainability ══════════════ -->
+  <div class="pp-panel" id="pp-tab-practices">
 
-    function switchNav(btn) {
-      document.querySelectorAll('.nav-btn').forEach(b => b.classList.remove('active'));
-      btn.classList.add('active');
-    }
+    <!-- Sustainability metrics -->
+    <div class="pp-card">
+      <div class="pp-header"><i class="ti ti-leaf"></i><h2>Sustainability Metrics</h2></div>
+      <div class="pp-kpi-row">
+        <div class="pp-kpi-icon" style="background:#E8F5EC"><i class="ti ti-droplet" style="color:#2d8a4e"></i></div>
+        <div><div class="pp-kpi-name">Water Footprint</div><div class="pp-kpi-desc">Total water consumed across operations</div></div>
+        <div class="pp-kpi-right"><div class="pp-kpi-val"><%= sustainabilityMetrics.waterFootprint.toFixed(2) %></div><div class="pp-kpi-unit">tCO₂e</div></div>
+      </div>
+      <div class="pp-kpi-row">
+        <div class="pp-kpi-icon" style="background:#FFF0E6"><i class="ti ti-trash" style="color:#c05c00"></i></div>
+        <div><div class="pp-kpi-name">Waste Footprint</div><div class="pp-kpi-desc">Waste generated and disposal impact</div></div>
+        <div class="pp-kpi-right"><div class="pp-kpi-val"><%= sustainabilityMetrics.wasteFootprint.toFixed(2) %></div><div class="pp-kpi-unit">tCO₂e</div></div>
+      </div>
+      <div class="pp-kpi-row">
+        <div class="pp-kpi-icon" style="background:#EEF2FF"><i class="ti ti-users" style="color:#3730a3"></i></div>
+        <div><div class="pp-kpi-name">Employee Operations</div><div class="pp-kpi-desc">Commute and business travel impact</div></div>
+        <div class="pp-kpi-right"><div class="pp-kpi-val"><%= sustainabilityMetrics.employeeOps.toFixed(2) %></div><div class="pp-kpi-unit">tCO₂e</div></div>
+      </div>
+      <div class="pp-kpi-row">
+        <div class="pp-kpi-icon" style="background:#E8F5EC"><i class="ti ti-solar-panel" style="color:#2d8a4e"></i></div>
+        <div><div class="pp-kpi-name">Renewable Energy Use</div><div class="pp-kpi-desc">Share of renewables in total energy mix</div></div>
+        <div class="pp-kpi-right"><div class="pp-kpi-val"><%= sustainabilityMetrics.renewableEnergyPct != null ? sustainabilityMetrics.renewableEnergyPct : '—' %></div><div class="pp-kpi-unit">%</div></div>
+      </div>
+    </div>
 
-    document.querySelectorAll('.tab-pill').forEach((pill, i) => {
-      const tabs = ['footprint', 'profile', 'practices'];
-      pill.onclick = () => {
-        switchTab(tabs[i]);
-        document.querySelectorAll('.nav-btn').forEach((b, j) => b.classList.toggle('active', j === i));
-      };
+    <!-- Green practices -->
+    <div class="pp-card">
+      <div class="pp-header"><i class="ti ti-recycle"></i><h2>Green Practices & Waste Solutions</h2></div>
+      <% if (greenPractices && greenPractices.length) { %>
+        <div class="pp-practice-grid">
+          <% greenPractices.forEach(function(practice) { %>
+            <div class="pp-practice-card">
+              <div class="pp-practice-img" style="background:linear-gradient(135deg,<%= practice.gradientFrom %>,<%= practice.gradientTo %>)">
+                <i class="ti <%= practice.icon %>" style="color:rgba(255,255,255,0.7);font-size:26px"></i>
+                <div class="pp-practice-label"><%= practice.title %></div>
+              </div>
+              <div class="pp-practice-body"><p><%= practice.description %></p></div>
+            </div>
+          <% }); %>
+        </div>
+      <% } else { %>
+        <div class="pp-card-body"><p style="font-size:12.5px;color:var(--pp-muted)">No green practices recorded yet.</p></div>
+      <% } %>
+    </div>
+
+    <!-- Data verification -->
+    <div class="pp-card">
+      <div class="pp-header"><i class="ti ti-shield-check"></i><h2>Data Verification</h2></div>
+      <div class="pp-verified-row" style="border-top:none">
+        <i class="ti ti-circle-check"></i>
+        <span>Carbon data sourced from <%= dataVerification.dataSource %> · <%= emissions.reportingYear %></span>
+      </div>
+      <div class="pp-kpi-row">
+        <div class="pp-kpi-icon" style="background:#E6F4F4"><i class="ti ti-database" style="color:var(--pp-primary)"></i></div>
+        <div><div class="pp-kpi-name">Data Source</div><div class="pp-kpi-desc"><%= dataVerification.dataSource %></div></div>
+        <div class="pp-kpi-right"><div class="pp-kpi-val" style="font-size:11.5px;color:var(--pp-accent)"><%= dataVerification.verified ? 'Verified' : 'Unverified' %></div></div>
+      </div>
+      <div class="pp-kpi-row">
+        <div class="pp-kpi-icon" style="background:#E8F5EC"><i class="ti ti-calendar" style="color:#2d8a4e"></i></div>
+        <div><div class="pp-kpi-name">Reporting Period</div><div class="pp-kpi-desc">Full Year · <%= emissions.reportingYear %></div></div>
+        <div class="pp-kpi-right"><div class="pp-kpi-val" style="font-size:11.5px"><%= dataVerification.reportingPeriodLabel %></div></div>
+      </div>
+    </div>
+
+  </div>
+
+  <div class="pp-privacy-link"><a href="<%= privacyPolicyUrl || '#' %>">Privacy Policy</a></div>
+  <div class="pp-powered">Powered by <span><%= poweredByLabel || 'GreenStep LCA' %></span></div>
+
+</div>
+
+<!-- ================= Bottom nav ================= -->
+<div class="pp-bottom-nav">
+  <button class="pp-nav-btn active" onclick="ppSwitchTab('footprint'); ppSwitchNav(this)"><i class="ti ti-home"></i>Home</button>
+  <button class="pp-nav-btn" onclick="ppSwitchTab('profile'); ppSwitchNav(this)"><i class="ti ti-building"></i>Profile</button>
+  <button class="pp-nav-btn" onclick="ppSwitchTab('practices'); ppSwitchNav(this)"><i class="ti ti-leaf"></i>Sustainability</button>
+</div>
+
+<script>
+  function ppSwitchTab(name) {
+    document.querySelectorAll('.pp-panel').forEach(p => p.classList.remove('active'));
+    document.getElementById('pp-tab-' + name).classList.add('active');
+    document.querySelectorAll('.pp-tab').forEach(p => p.classList.remove('active'));
+    const pillMap = { footprint: 0, profile: 1, practices: 2 };
+    document.querySelectorAll('.pp-tab')[pillMap[name]].classList.add('active');
+    document.querySelectorAll('.pp-nav-btn').forEach((b, j) => b.classList.toggle('active', j === pillMap[name]));
+  }
+  function ppSwitchNav(btn) {
+    document.querySelectorAll('.pp-nav-btn').forEach(b => b.classList.remove('active'));
+    btn.classList.add('active');
+  }
+  document.querySelectorAll('.pp-tab').forEach((pill, i) => {
+    const tabs = ['footprint', 'profile', 'practices'];
+    pill.onclick = () => ppSwitchTab(tabs[i]);
+  });
+  window.addEventListener('load', () => {
+    document.querySelectorAll('.pp-bar-fill').forEach(b => {
+      const w = b.style.width;
+      b.style.width = '0';
+      setTimeout(() => b.style.width = w, 200);
     });
-
-    // Animate bars on load
-    window.addEventListener('load', () => {
-      document.querySelectorAll('.bar-fill').forEach(b => {
-        const w = b.style.width;
-        b.style.width = '0';
-        setTimeout(() => b.style.width = w, 200);
-      });
-    });
-  </script>
+  });
+</script>
 
 </body>
 </html>
