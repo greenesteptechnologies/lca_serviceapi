@@ -414,6 +414,9 @@ paths:
                         type: string
                       publishedHTMLURL:
                         type: string
+                      status:
+                        type: string
+                        enum: [DRAFT, REVIEWED, APPROVED, PUBLISHED]
                       physicalFilePath:
                         type: string
         '400':
@@ -428,7 +431,7 @@ paths:
       tags:
         - Digital Passport
       summary: Get Digital Passport metadata
-      description: Returns active published passport metadata for the JWT company. Supports filtering by required passportType and optional publicToken for a single row.
+      description: Returns all active passport metadata for the JWT company, including DRAFT, REVIEWED, APPROVED, and PUBLISHED passports. Supports filtering by required passportType and optional publicToken for a single row.
       security:
         - ApiKeyAuth: []
           BearerAuth: []
@@ -445,7 +448,7 @@ paths:
           required: false
           schema:
             type: string
-          description: Optional public token. If omitted, returns all active published rows for the JWT company.
+          description: Optional public token. If omitted, returns all active rows, including drafts, for the JWT company.
       responses:
         '200':
           description: Company DPP metadata returned
@@ -488,6 +491,9 @@ paths:
                               format: date-time
                             publicToken:
                               type: string
+                            status:
+                              type: string
+                              enum: [DRAFT, REVIEWED, APPROVED, PUBLISHED]
                       - type: object
                         properties:
                           companyDigitalPassportId:
@@ -514,6 +520,9 @@ paths:
                             format: date-time
                           publicToken:
                             type: string
+                          status:
+                            type: string
+                            enum: [DRAFT, REVIEWED, APPROVED, PUBLISHED]
         '401':
           description: Unauthorized - missing or invalid API key or JWT token
         '400':
@@ -521,12 +530,102 @@ paths:
         '404':
           description: Digital Passport not found for provided token
 
+  /api/v1/dpp/{companyDigitalPassportId}/status:
+    patch:
+      tags:
+        - Digital Passport
+      summary: Update Digital Passport status
+      description: Updates a passport to DRAFT, REVIEWED, APPROVED, or PUBLISHED. APPROVED is an approval decision only. PUBLISHED sets IsPublished to true and makes the public HTML route available; all other states remain unpublished.
+      security:
+        - ApiKeyAuth: []
+          BearerAuth: []
+      parameters:
+        - in: path
+          name: companyDigitalPassportId
+          required: true
+          schema:
+            type: integer
+          description: Digital Passport record ID.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [status]
+              properties:
+                status:
+                  type: string
+                  enum: [DRAFT, REVIEWED, APPROVED, PUBLISHED]
+                  example: REVIEWED
+      responses:
+        '200':
+          description: Digital Passport status updated
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                  message:
+                    type: string
+                  data:
+                    type: object
+                    properties:
+                      companyDigitalPassportId:
+                        type: integer
+                      status:
+                        type: string
+                        enum: [DRAFT, REVIEWED, APPROVED, PUBLISHED]
+                      isPublished:
+                        type: boolean
+        '400':
+          description: Invalid DPP ID or status
+        '401':
+          description: Unauthorized - invalid JWT claims
+        '404':
+          description: Digital Passport not found
+
+  /api/v1/dpp/preview/{publicToken}:
+    get:
+      tags:
+        - Digital Passport
+      summary: Preview a Digital Passport
+      description: Returns the DPP HTML for the authenticated company, regardless of whether its status is DRAFT, REVIEWED, APPROVED, or PUBLISHED. This route is protected and is not public.
+      security:
+        - ApiKeyAuth: []
+          BearerAuth: []
+      parameters:
+        - in: path
+          name: publicToken
+          required: true
+          schema:
+            type: string
+        - in: query
+          name: passportType
+          required: true
+          schema:
+            type: string
+            enum: [COMPANY, PRODUCT, USER, DELEGATE]
+      responses:
+        '200':
+          description: DPP preview HTML
+          content:
+            text/html:
+              schema:
+                type: string
+        '401':
+          description: Unauthorized - missing or invalid API key or JWT token
+        '404':
+          description: Digital Passport not found for the authenticated company
+
   /dpp/{publicToken}:
     get:
       tags:
         - Digital Passport Public
       summary: Public Digital Passport HTML
-      description: Public route that serves generated DPP HTML by token and passport type.
+      description: Public route that serves HTML only when the DPP status is PUBLISHED and IsPublished is true.
       parameters:
         - in: path
           name: publicToken
