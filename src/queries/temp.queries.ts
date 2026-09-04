@@ -128,11 +128,11 @@ export const getActiveCompanyDppListQuery = `
     IsPublished AS isPublished,
     PublishedOn AS publishedOn,
     PublicToken AS publicToken,
+    Status AS status,
     ExtNote1 AS metaJson,
     ExtNote2 AS payloadJson
   FROM lca_master.gs_CompanyDigitalPassport
   WHERE IsActive = 1
-    AND IsPublished = 1
     AND CompanyID = @CompanyID
     AND PassportType = @PassportType
   ORDER BY PublishedOn DESC, CompanyDigitalPassportID DESC
@@ -151,17 +151,29 @@ export const getCompanyDppByTokenQuery = `
     IsPublished AS isPublished,
     PublishedOn AS publishedOn,
     PublicToken AS publicToken,
+    Status AS status,
     ExtNote1 AS metaJson,
     ExtNote2 AS payloadJson
   FROM lca_master.gs_CompanyDigitalPassport
   WHERE IsActive = 1
-    AND IsPublished = 1
     AND CompanyID = @CompanyID
     AND PublicToken = @PublicToken
     AND PassportType = @PassportType
   ORDER BY PublishedOn DESC, CompanyDigitalPassportID DESC
 `;
 
+  export const updateCompanyDppStatusQuery = `
+    UPDATE lca_master.gs_CompanyDigitalPassport
+    SET
+      Status = @Status,
+      IsPublished = CASE WHEN @Status = 'PUBLISHED' THEN 1 ELSE 0 END,
+      PublishedOn = CASE WHEN @Status = 'PUBLISHED' THEN ISNULL(PublishedOn, GETDATE()) ELSE NULL END,
+      ModifiedOn = GETDATE(),
+      ModifiedBy = @ModifiedBy
+    WHERE CompanyDigitalPassportID = @CompanyDigitalPassportID
+      AND CompanyID = @CompanyID
+      AND IsActive = 1;
+  `;
 export const getPublicCompanyDppByTokenQuery = `
   SELECT TOP (1)
     CompanyDigitalPassportID AS companyDigitalPassportId,
@@ -173,9 +185,11 @@ export const getPublicCompanyDppByTokenQuery = `
     PublishedHTMLURL AS publishedHtmlUrl,
     IsPublished AS isPublished,
     PublishedOn AS publishedOn,
-    PublicToken AS publicToken
+    PublicToken AS publicToken,
+    Status AS status
   FROM lca_master.gs_CompanyDigitalPassport
   WHERE IsActive = 1
+    AND Status = 'PUBLISHED'
     AND IsPublished = 1
     AND PublicToken = @PublicToken
     AND PassportType = @PassportType

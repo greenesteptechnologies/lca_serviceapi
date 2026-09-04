@@ -20,6 +20,7 @@ import {
   getActiveCompanyDppListQuery,
   getCompanyDppByTokenQuery,
   getPublicCompanyDppByTokenQuery,
+  updateCompanyDppStatusQuery,
 } from "../queries/temp.queries";
 
 interface CompanyDppGenerateBody {
@@ -66,8 +67,10 @@ interface UserDppGenerateBody {
 type DelegateDppGenerateBody = Partial<DelegateDppTemplateData>;
 
 type PassportType = "COMPANY" | "PRODUCT" | "USER" | "DELEGATE";
+type DppStatus = "DRAFT" | "REVIEWED" | "APPROVED" | "PUBLISHED";
 
 const ALLOWED_PASSPORT_TYPES: PassportType[] = ["COMPANY", "PRODUCT", "USER", "DELEGATE"];
+const ALLOWED_DPP_STATUSES: DppStatus[] = ["DRAFT", "REVIEWED", "APPROVED", "PUBLISHED"];
 
 function isMissing(value: unknown): boolean {
   return value === undefined || value === null || value === "";
@@ -486,6 +489,7 @@ export async function getCompanyDppMeta(
         isPublished: row.isPublished,
         publishedOn: row.publishedOn,
         publicToken: row.publicToken,
+        status: row.status,
       }));
 
       return res.status(200).json({
@@ -525,6 +529,7 @@ export async function getCompanyDppMeta(
         isPublished: row.isPublished,
         publishedOn: row.publishedOn,
         publicToken: row.publicToken,
+        status: row.status,
       },
     });
   } catch (error) {
@@ -534,6 +539,59 @@ export async function getCompanyDppMeta(
       success: false,
       message: "Failed to load company DPP metadata",
     });
+  }
+}
+
+export async function updateDppStatus(
+  req: Request,
+  res: Response,
+): Promise<Response> {
+  const companyId = Number(req.user?.CompanyId);
+  const passportId = Number(req.params.companyDigitalPassportId);
+  const status = String(req.body?.status || "").trim().toUpperCase() as DppStatus;
+  const modifiedBy = Number(req.user?.UserId);
+
+  if (!Number.isInteger(companyId) || companyId <= 0 || !Number.isInteger(passportId) || passportId <= 0) {
+    return res.status(400).json({ success: false, message: "Valid company and DPP IDs are required" });
+  }
+
+  if (!ALLOWED_DPP_STATUSES.includes(status)) {
+    return res.status(400).json({
+      success: false,
+      message: "status must be one of DRAFT, REVIEWED, APPROVED, PUBLISHED",
+    });
+  }
+
+  if (!Number.isInteger(modifiedBy) || modifiedBy <= 0) {
+    return res.status(401).json({ success: false, message: "Invalid or missing UserId in token" });
+  }
+
+  try {
+    const pool = await getPool();
+    const result = await pool
+      .request()
+      .input("CompanyDigitalPassportID", sql.Int, passportId)
+      .input("CompanyID", sql.Int, companyId)
+      .input("Status", sql.VarChar(20), status)
+      .input("ModifiedBy", sql.Int, modifiedBy)
+      .query(updateCompanyDppStatusQuery);
+
+    if (!result.rowsAffected[0]) {
+      return res.status(404).json({ success: false, message: "DPP not found" });
+    }
+
+    return res.status(200).json({
+      success: true,
+      message: `DPP status updated to ${status}`,
+      data: {
+        companyDigitalPassportId: passportId,
+        status,
+        isPublished: status === "PUBLISHED",
+      },
+    });
+  } catch (error) {
+    console.error("Update DPP status error:", error);
+    return res.status(500).json({ success: false, message: "Failed to update DPP status" });
   }
 }
 
@@ -585,5 +643,53 @@ export async function serveCompanyDppHtml(
     console.error("Serve company DPP HTML error:", error);
 
     return res.status(500).send("Failed to load company DPP");
+  }
+}
+
+export async function previewCompanyDppHtml(
+  req: Request,
+  res: Response,
+): Promise<Response | void> {
+  try {
+    const companyId = Number(req.user?.CompanyId);
+    const publicToken = req.params.publicToken;
+    const passportType = resolvePassportType(req.query.passportType);
+
+    if (!Number.isInteger(companyId) || companyId <= 0) {
+      return res.status(401).send("Invalid or missing CompanyId in token");
+    }
+    if (!publicToken) return res.status(400).send("publicToken is required");
+    if (!passportType) {
+      return res.status(400).send("passportType must be one of COMPANY, PRODUCT, USER, DELEGATE");
+    }
+
+    const pool = await getPool();
+    const result = await pool
+      .request()
+      .input("CompanyID", sql.Int, companyId)
+      .input("PublicToken", sql.NVarChar(100), publicToken)
+      .input("PassportType", sql.NVarChar(20), passportType)
+      .query(getCompanyDppByTokenQuery);
+
+    if (!result.recordset.length) return res.status(404).send("Company DPP not found");
+
+    const row = result.recordset[0];
+    const pathArguments: [number, string, string] = [
+      Number(row.companyId),
+      String(row.publicToken),
+      String(row.htmlFileName || "index.html"),
+    ];
+    const physicalFilePath = passportType === "USER"
+      ? resolveUserDppPhysicalFilePath(...pathArguments)
+      : passportType === "DELEGATE"
+        ? resolveDelegateDppPhysicalFilePath(...pathArguments)
+        : resolveCompanyDppPhysicalFilePath(...pathArguments);
+
+    const html = await fs.readFile(physicalFilePath, "utf8");
+    res.setHeader("Content-Type", "text/html; charset=utf-8");
+    return res.status(200).send(html);
+  } catch (error) {
+    console.error("Preview company DPP HTML error:", error);
+    return res.status(500).send("Failed to load DPP preview");
   }
 }

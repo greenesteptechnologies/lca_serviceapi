@@ -21,6 +21,7 @@ export interface CompanyDppResult {
   htmlFilePath: string;
   publishedHTMLURL: string;
   physicalFilePath: string;
+  status: "DRAFT";
 }
 
 export interface CompanyDppTemplateData {
@@ -455,6 +456,7 @@ export async function generateCompanyDpp(
                     ModifiedBy,
                     IsActive,
                     PublicToken,
+                    Status,
                     ExtNote1,
                     ExtNote2
                 )
@@ -467,14 +469,15 @@ export async function generateCompanyDpp(
                     @HTMLFileName,
                     @HTMLFilePath,
                     @PublishedHTMLURL,
-                    1,
-                    GETDATE(),
+                    0,
+                    NULL,
                     GETDATE(),
                     GETDATE(),
                     @CreatedBy,
                     @ModifiedBy,
                     1,
                     @PublicToken,
+                    'DRAFT',
                     @ExtNote1,
                     @ExtNote2
                 )
@@ -497,6 +500,7 @@ export async function generateCompanyDpp(
       publishedHTMLURL,
 
       physicalFilePath,
+      status: "DRAFT",
     };
   } catch (error) {
     if (transactionBegun) {
@@ -552,15 +556,15 @@ export async function generateUserDpp(
       .input("ExtNote2", sql.NVarChar(sql.MAX), JSON.stringify({ template }))
       .query(`
         INSERT INTO lca_master.gs_CompanyDigitalPassport
-        (CompanyID, PassportGUID, PassportVersion, PassportType, HTMLFileName, HTMLFilePath, PublishedHTMLURL, IsPublished, PublishedOn, CreatedOn, ModifiedOn, CreatedBy, ModifiedBy, IsActive, PublicToken, ExtNote1, ExtNote2)
+        (CompanyID, PassportGUID, PassportVersion, PassportType, HTMLFileName, HTMLFilePath, PublishedHTMLURL, IsPublished, PublishedOn, CreatedOn, ModifiedOn, CreatedBy, ModifiedBy, IsActive, PublicToken, Status, ExtNote1, ExtNote2)
         VALUES
-        (@CompanyID, @PassportGUID, @PassportVersion, @PassportType, @HTMLFileName, @HTMLFilePath, @PublishedHTMLURL, 1, GETDATE(), GETDATE(), GETDATE(), @CreatedBy, @ModifiedBy, 1, @PublicToken, @ExtNote1, @ExtNote2)
+        (@CompanyID, @PassportGUID, @PassportVersion, @PassportType, @HTMLFileName, @HTMLFilePath, @PublishedHTMLURL, 0, NULL, GETDATE(), GETDATE(), @CreatedBy, @ModifiedBy, 1, @PublicToken, 'DRAFT', @ExtNote1, @ExtNote2)
       `);
 
     await transaction.commit();
     transactionBegun = false;
 
-    return { passportGUID, publicToken, passportVersion, htmlFileName, htmlFilePath, publishedHTMLURL, physicalFilePath };
+    return { passportGUID, publicToken, passportVersion, htmlFileName, htmlFilePath, publishedHTMLURL, physicalFilePath, status: "DRAFT" };
   } catch (error) {
     if (transactionBegun) {
       await transaction.rollback();
@@ -611,14 +615,14 @@ export async function generateDelegateDpp(
       .input("ExtNote2", sql.NVarChar(sql.MAX), JSON.stringify({ template }))
       .query(`
         INSERT INTO lca_master.gs_CompanyDigitalPassport
-        (CompanyID, PassportGUID, PassportVersion, PassportType, HTMLFileName, HTMLFilePath, PublishedHTMLURL, IsPublished, PublishedOn, CreatedOn, ModifiedOn, CreatedBy, ModifiedBy, IsActive, PublicToken, ExtNote1, ExtNote2)
+        (CompanyID, PassportGUID, PassportVersion, PassportType, HTMLFileName, HTMLFilePath, PublishedHTMLURL, IsPublished, PublishedOn, CreatedOn, ModifiedOn, CreatedBy, ModifiedBy, IsActive, PublicToken, Status, ExtNote1, ExtNote2)
         VALUES
-        (@CompanyID, @PassportGUID, @PassportVersion, @PassportType, @HTMLFileName, @HTMLFilePath, @PublishedHTMLURL, 1, GETDATE(), GETDATE(), GETDATE(), @CreatedBy, @ModifiedBy, 1, @PublicToken, @ExtNote1, @ExtNote2)
+        (@CompanyID, @PassportGUID, @PassportVersion, @PassportType, @HTMLFileName, @HTMLFilePath, @PublishedHTMLURL, 0, NULL, GETDATE(), GETDATE(), @CreatedBy, @ModifiedBy, 1, @PublicToken, 'DRAFT', @ExtNote1, @ExtNote2)
       `);
 
     await transaction.commit();
     transactionBegun = false;
-    return { passportGUID, publicToken, passportVersion, htmlFileName, htmlFilePath, publishedHTMLURL, physicalFilePath };
+    return { passportGUID, publicToken, passportVersion, htmlFileName, htmlFilePath, publishedHTMLURL, physicalFilePath, status: "DRAFT" };
   } catch (error) {
     if (transactionBegun) await transaction.rollback();
     throw error;
