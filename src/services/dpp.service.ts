@@ -163,12 +163,20 @@ export interface DelegateDppTemplateData {
     myPassportUrl?: string;
     logoUrl?: string;
   };
+  company?: {
+    name?: string;
+    description?: string;
+    address?: string;
+    logoUrl?: string;
+    companyUrl?: string;
+  };
   delegate: {
     fullName: string;
     jobTitle: string;
     company: string;
     passType?: string;
     photoUrl?: string;
+    logoUrl?: string;
     idNumber?: string;
   };
   qr: { imageUrl?: string; label?: string; sublabel?: string };
@@ -189,13 +197,25 @@ export interface DelegateDppTemplateData {
     sealImageUrl?: string;
   };
   eventStats?: {
-    totalFootprint?: number;
-    unit?: string;
-    perDelegate?: number;
-    delegates?: number;
-    offsetPercent?: number;
+    totalEmissions?: { value: number | string; unit?: string };
+    scope1?: { value: number | string; unit?: string };
+    scope2?: { value: number | string; unit?: string };
+    scope3?: { value: number | string; unit?: string };
+    energy?: { value: number | string; unit?: string };
+    water?: { value: number | string; unit?: string };
+    waste?: { value: number | string; unit?: string };
+    decarbonizationImpact?: { value: number | string; unit?: string };
   };
   eventBreakdown?: Array<{ label: string; percent: number }>;
+  scopeBreakdown?: Array<{
+    scope: string;
+    label: string;
+    value: number | string;
+    unit?: string;
+    percent?: number;
+    items?: Array<{ label: string; value: number | string; unit?: string }>;
+  }>;
+  intensityMetrics?: Array<{ label: string; value: number | string; unit?: string }>;
   eventTravelByMode?: Array<{ mode: string; percent: number }>;
   eventSustainabilityActions?: Array<{ label: string; value: string | number }>;
   eventOffset?: {

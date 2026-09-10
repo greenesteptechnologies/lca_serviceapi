@@ -281,6 +281,14 @@ paths:
                         verified: { type: boolean }
                         myPassportUrl: { type: string, format: uri }
                         logoUrl: { type: string, format: uri }
+                    company:
+                      type: object
+                      properties:
+                        name: { type: string }
+                        description: { type: string }
+                        address: { type: string }
+                        logoUrl: { type: string, format: uri }
+                        companyUrl: { type: string, format: uri }
                     delegate:
                       type: object
                       required: [jobTitle]
@@ -290,6 +298,7 @@ paths:
                         company: { type: string, description: Defaults to the JWT company name. }
                         passType: { type: string }
                         photoUrl: { type: string, format: uri }
+                        logoUrl: { type: string, format: uri }
                         idNumber: { type: string }
                     qr:
                       type: object
@@ -343,16 +352,64 @@ paths:
                     eventStats:
                       type: object
                       properties:
-                        totalFootprint: { type: number }
-                        unit: { type: string }
-                        perDelegate: { type: number }
-                        delegates: { type: number }
-                        offsetPercent: { type: number }
+                        totalEmissions:
+                          type: object
+                          properties: { value: { oneOf: [{ type: string }, { type: number }] }, unit: { type: string } }
+                        scope1:
+                          type: object
+                          properties: { value: { oneOf: [{ type: string }, { type: number }] }, unit: { type: string } }
+                        scope2:
+                          type: object
+                          properties: { value: { oneOf: [{ type: string }, { type: number }] }, unit: { type: string } }
+                        scope3:
+                          type: object
+                          properties: { value: { oneOf: [{ type: string }, { type: number }] }, unit: { type: string } }
+                        energy:
+                          type: object
+                          properties: { value: { oneOf: [{ type: string }, { type: number }] }, unit: { type: string } }
+                        water:
+                          type: object
+                          properties: { value: { oneOf: [{ type: string }, { type: number }] }, unit: { type: string } }
+                        waste:
+                          type: object
+                          properties: { value: { oneOf: [{ type: string }, { type: number }] }, unit: { type: string } }
+                        decarbonizationImpact:
+                          type: object
+                          properties: { value: { oneOf: [{ type: string }, { type: number }] }, unit: { type: string } }
                     eventBreakdown:
                       type: array
                       items:
                         type: object
                         properties: { label: { type: string }, percent: { type: number } }
+                    scopeBreakdown:
+                      type: array
+                      items:
+                        type: object
+                        required: [scope, label, value]
+                        properties:
+                          scope: { type: string }
+                          label: { type: string }
+                          value: { oneOf: [{ type: string }, { type: number }] }
+                          unit: { type: string }
+                          percent: { type: number, minimum: 0, maximum: 100 }
+                          items:
+                            type: array
+                            items:
+                              type: object
+                              required: [label, value]
+                              properties:
+                                label: { type: string }
+                                value: { oneOf: [{ type: string }, { type: number }] }
+                                unit: { type: string }
+                    intensityMetrics:
+                      type: array
+                      items:
+                        type: object
+                        required: [label, value]
+                        properties:
+                          label: { type: string }
+                          value: { oneOf: [{ type: string }, { type: number }] }
+                          unit: { type: string }
                     eventTravelByMode:
                       type: array
                       items:
