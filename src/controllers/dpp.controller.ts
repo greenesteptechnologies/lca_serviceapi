@@ -292,6 +292,7 @@ function buildDelegateGenerationRequest(
 
     template: {
       event: body.event,
+      company: body.company || {},
       delegate: {
         ...body.delegate,
         fullName: String(body.delegate.fullName || resolveUserDisplayName(user, delegateId)).trim(),
@@ -306,8 +307,10 @@ function buildDelegateGenerationRequest(
       },
       credentials: body.credentials || [],
       verification: body.verification || {},
-      eventStats: body.eventStats,
+      eventStats: body.eventStats || {},
       eventBreakdown: body.eventBreakdown || [],
+      scopeBreakdown: body.scopeBreakdown || [],
+      intensityMetrics: body.intensityMetrics || [],
       eventTravelByMode: body.eventTravelByMode || [],
       eventSustainabilityActions: body.eventSustainabilityActions || [],
       eventOffset: body.eventOffset,

@@ -5,12 +5,10 @@
  * The Delegate Passport ALWAYS renders, with two true layout variants
  * switched purely by CSS media query (no JS, no server-side device
  * detection needed):
- *   - Mobile  (< 640px): dark "digital badge" card — matches the
- *     phone mockup: dark header strip, photo+name+FULL ACCESS pill,
- *     entry QR box, single "Up next" agenda item, compact footprint
- *     bar, one "Attendance & CPD credits" row.
- *   - Desktop (>= 640px): full light card — header, role/org/QR meta
- *     row, 2x2 grid (agenda / footprint / credentials / verification).
+ *   - Mobile  (< 640px): dark "digital badge" card — dark header strip,
+ *     photo+name+FULL ACCESS pill, entry QR box, footprint bar.
+ *   - Desktop (>= 640px): full light card — header, role/org row,
+ *     footprint section.
  * Both variants read the SAME data — nothing is duplicated in the payload.
  *
  * The Event Sustainability Passport is a separate card below, gated
@@ -23,43 +21,48 @@
  *     name, year, id, dates, venue, city, verified, myPassportUrl, logoUrl
  *   },
  *
+ *   // ---- Company info shown in the Event Sustainability Passport header
+ *   // (replaces the event name/dates line there) ----
+ *   company: { name, description, logoUrl },
+ *
  *   // ---- Delegate Passport data (always used, both variants) ----
  *   delegate:   { fullName, jobTitle, company, passType, photoUrl, idNumber },
  *   qr:         { imageUrl, label, sublabel },
- *   agenda:     [ { time, title, location } ],   // first item = mobile "Up next"
  *   footprint:  {
  *     total, unit, offsetLabel,
  *     segments: [ { label, value, percent } ]
  *   },
- *   credentials: [ { title, subtitle, verified } ],
- *   verification: { credentialType, issuerDid, revocable, active, shareContactCard, sealImageUrl },
  *
  *   // ---- Event Sustainability Passport data (only used if shown) ----
- *   eventStats:  { totalFootprint, unit, perDelegate, delegates, offsetPercent },
+ *   // Top stat cards — mirrors the dashboard summary tiles
+ *   // (Total Emissions / Scope 1-3 / Energy / Water / Waste / Decarbonization Impact).
+ *   // Each key is optional; omit a key to show "—" for that card.
+ *   // Card icons/colors are fixed in the template, not payload-driven.
+ *   eventStats: {
+ *     totalEmissions:        { value, unit },   // unit defaults to 'tCO2e'
+ *     scope1:                { value, unit },
+ *     scope2:                { value, unit },
+ *     scope3:                { value, unit },
+ *     energy:                { value, unit },
+ *     water:                 { value, unit },
+ *     waste:                 { value, unit },
+ *     decarbonizationImpact: { value, unit }
+ *   },
  *   eventBreakdown:       [ { label, percent } ],
  *   eventTravelByMode:    [ { mode, percent } ],
- *   eventSustainabilityActions: [ { label, value } ],
- *   eventOffset: { residualEmissions, unit, offsetPurchased, offsetLabel, net, registry, projectId, vintage },
  *   eventCertifications:  [ 'ISO 20121 (events)', ... ],
  *
  *   branding: { primary, accent },   // optional overrides, shared by all cards
  *
  *   flags: {
- *     // Delegate Passport sections (desktop variant only, each defaults true)
- *     showAgenda: true,
- *     showFootprint: true,
- *     showCredentials: true,
- *     showVerification: true,
+ *     showFootprint: true,          // Delegate Passport footprint section
  *
- *     // Whether to render the Event Sustainability Passport at all
- *     showEventPassport: true,
+ *     showEventPassport: true,      // whether to render the Event Sustainability Passport at all
  *
  *     // Optional fine-grained control WITHIN the event passport,
  *     // only relevant when showEventPassport is true
  *     showEventBreakdown: true,
  *     showEventTravelMode: true,
- *     showEventSustainabilityActions: true,
- *     showEventOffset: true,
  *     showEventCertifications: true
  *   }
  * })
@@ -67,40 +70,51 @@
  */
 
 const event        = locals.event || {};
+const company       = locals.company || {};
 const delegate     = locals.delegate || {};
 const qr           = locals.qr || {};
-const agenda       = locals.agenda || [];
 const footprint    = locals.footprint || {};
 const footprintSegments = footprint.segments || [];
-const credentials  = locals.credentials || [];
-const verification = locals.verification || {};
 
 const eventStats   = locals.eventStats || {};
 const eventBreakdown = locals.eventBreakdown || [];
+const scopeBreakdown = locals.scopeBreakdown || [];
+const intensityMetrics = locals.intensityMetrics || [];
 const eventTravelByMode = locals.eventTravelByMode || [];
-const eventSustainabilityActions = locals.eventSustainabilityActions || [];
-const eventOffset  = locals.eventOffset || {};
 const eventCertifications = locals.eventCertifications || [];
 
 const branding = Object.assign({ primary: '#0B2545', accent: '#14B8A6' }, locals.branding || {});
 
 const flags = Object.assign({
-  showAgenda: true,
   showFootprint: true,
-  showCredentials: true,
-  showVerification: true,
 
   showEventPassport: true,
   showEventBreakdown: true,
   showEventTravelMode: true,
-  showEventSustainabilityActions: true,
-  showEventOffset: true,
   showEventCertifications: true
 }, locals.flags || {});
 
 const fmtNum = (n) => (n === undefined || n === null || n === '') ? '—' : n;
 const segmentColors = ['#0B2545', '#14B8A6', '#7C93B8', '#C7D2E0', '#E4E7EC'];
-const upNext = agenda.length ? agenda[0] : null;
+
+// helpers for the event stat cards (each stat is an optional { value, unit } object)
+const statVal  = (s) => (s && s.value !== undefined && s.value !== null && s.value !== '') ? s.value : '—';
+const statUnit = (s) => (s && s.unit) || 'tCO2e';
+
+// fixed icon/color treatment per stat card — cosmetic only, not payload-driven
+const statCardDefs = [
+  { key: 'totalEmissions',        label: 'Total Emissions',        icon: '📦', bg: '#FDE8ED', color: '#D6336C' },
+  { key: 'scope1',                label: 'Scope 1',                icon: '🏢', bg: '#E7EEFE', color: '#3B5BDB' },
+  { key: 'scope2',                label: 'Scope 2',                icon: '📋', bg: '#FDEEDD', color: '#E8590C' },
+  { key: 'scope3',                label: 'Scope 3',                icon: '🚚', bg: '#FDF3D8', color: '#C9971E' },
+  { key: 'energy',                label: 'Energy',                 icon: '⚡', bg: '#FDEEDD', color: '#E8590C' },
+  { key: 'water',                 label: 'Water',                  icon: '💧', bg: '#E3F2FD', color: '#1C7ED6' },
+  { key: 'waste',                 label: 'Waste',                  icon: '🗑️', bg: '#F1E9FB', color: '#8B5FBF' },
+  { key: 'decarbonizationImpact', label: 'Decarbonization Impact', icon: '📈', bg: '#E6F8EE', color: '#2F9E63', accent: true }
+];
+
+const companyLogo = company.companyUrl || company.logoUrl || event.logoUrl;
+const delegateLogo = delegate.logoUrl || delegate.photoUrl;
 %><!DOCTYPE html>
 <html lang="en">
 <head>
@@ -206,14 +220,8 @@ const upNext = agenda.length ? agenda[0] : null;
     font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.04em;
     color: var(--pp-ink); margin-bottom: 8px;
   }
-  .pp-badge-upnext {
-    border: 1px solid var(--pp-border); border-radius: var(--pp-radius-md);
-    padding: 10px 12px; margin-bottom: 16px; font-size: 12.5px;
-  }
-  .pp-badge-upnext-time { color: var(--pp-muted); }
-  .pp-badge-upnext-title { font-weight: 600; margin-top: 2px; }
 
-  .pp-badge-footprint { margin-bottom: 16px; }
+  .pp-badge-footprint { margin-bottom: 4px; }
   .pp-badge-fp-row { display: flex; justify-content: space-between; align-items: baseline; margin-bottom: 8px; }
   .pp-badge-fp-value { font-size: 26px; font-weight: 800; }
   .pp-badge-fp-unit { font-size: 12px; color: var(--pp-muted); margin-left: 3px; }
@@ -221,19 +229,6 @@ const upNext = agenda.length ? agenda[0] : null;
   .pp-badge-fp-track { display: flex; height: 6px; border-radius: 4px; overflow: hidden; background: var(--pp-track); margin-bottom: 6px; }
   .pp-badge-fp-seg { height: 100%; }
   .pp-badge-fp-legend { display: flex; justify-content: space-between; font-size: 10.5px; color: var(--pp-muted); }
-
-  .pp-badge-creds-row {
-    display: flex; align-items: center; gap: 10px;
-    border: 1px solid var(--pp-border); border-radius: var(--pp-radius-md);
-    padding: 10px 12px;
-  }
-  .pp-badge-creds-title { font-size: 12.5px; font-weight: 600; }
-  .pp-badge-creds-sub { font-size: 11px; color: var(--pp-muted); }
-  .pp-badge-info-btn {
-    margin-left: auto; width: 20px; height: 20px; border-radius: 50%;
-    border: 1px solid var(--pp-border); color: var(--pp-muted); font-size: 10px;
-    display: flex; align-items: center; justify-content: center; flex-shrink: 0;
-  }
 
   .pp-badge-footer-note {
     font-size: 11.5px; color: var(--pp-muted); padding: 10px 4px 0; text-align: center;
@@ -262,7 +257,7 @@ const upNext = agenda.length ? agenda[0] : null;
   .pp-header-text { flex: 1; min-width: 200px; }
   .pp-header-text h1 { margin: 0; font-size: 18px; font-weight: 700; }
   .pp-header-text h1 .pp-suffix { font-weight: 500; color: var(--pp-muted); }
-  .pp-header-text .pp-subline { margin-top: 2px; font-size: 13px; color: var(--pp-muted); }
+  .pp-header-text .pp-subline { margin-top: 2px; font-size: 13px; color: var(--pp-muted); line-height: 1.4; }
 
   .pp-note {
     font-size: 12.5px; color: var(--pp-muted);
@@ -273,6 +268,7 @@ const upNext = agenda.length ? agenda[0] : null;
   .pp-footer-note::before { content: "✎ "; }
 
   .pp-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; padding: 20px 24px; }
+  .pp-grid.pp-grid-single { grid-template-columns: 1fr; }
   @media (max-width: 900px) { .pp-grid { grid-template-columns: 1fr; } }
 
   .pp-section { border: 1px solid var(--pp-border); border-radius: var(--pp-radius-md); padding: 16px; }
@@ -280,23 +276,12 @@ const upNext = agenda.length ? agenda[0] : null;
 
   /* ===== Desktop delegate passport specifics ===== */
   .pp-meta-row {
-    display: grid; grid-template-columns: 1fr 1fr auto; gap: 24px; align-items: center;
+    display: grid; grid-template-columns: 1fr 1fr; gap: 24px; align-items: center;
     padding: 20px 24px; border-bottom: 1px solid var(--pp-border);
   }
   @media (max-width: 900px) { .pp-meta-row { grid-template-columns: 1fr; } }
   .pp-meta-label { font-size: 11px; letter-spacing: 0.06em; text-transform: uppercase; color: var(--pp-muted); margin-bottom: 4px; }
   .pp-meta-value { font-size: 15px; font-weight: 700; }
-
-  .pp-qr-box { display: flex; align-items: center; gap: 12px; border: 1px solid var(--pp-border); border-radius: var(--pp-radius-md); padding: 10px 16px; background: #FAFBFC; }
-  .pp-qr-icon { width: 40px; height: 40px; border-radius: 6px; background: var(--pp-track); background-size: cover; background-position: center; flex-shrink: 0; }
-  .pp-qr-label { font-size: 13px; font-weight: 600; }
-  .pp-qr-sublabel { font-size: 12px; color: var(--pp-muted); }
-
-  .pp-agenda-row { display: flex; justify-content: space-between; align-items: baseline; padding: 8px 0; border-top: 1px solid var(--pp-border); font-size: 13px; }
-  .pp-agenda-row:first-of-type { border-top: none; }
-  .pp-agenda-time { color: var(--pp-muted); width: 52px; flex-shrink: 0; }
-  .pp-agenda-title { flex: 1; font-weight: 600; }
-  .pp-agenda-location { color: var(--pp-muted); }
 
   .pp-footprint-total { display: flex; justify-content: space-between; align-items: baseline; margin-bottom: 12px; }
   .pp-footprint-value { font-size: 30px; font-weight: 800; }
@@ -306,19 +291,6 @@ const upNext = agenda.length ? agenda[0] : null;
   .pp-fp-segment-label { display: flex; justify-content: space-between; font-size: 12px; color: var(--pp-muted); margin-bottom: 3px; }
   .pp-fp-track { height: 6px; background: var(--pp-track); border-radius: 4px; overflow: hidden; }
   .pp-fp-fill { height: 100%; background: var(--pp-primary); border-radius: 4px; }
-
-  .pp-credential-row { display: flex; align-items: center; gap: 10px; padding: 8px 0; border-top: 1px solid var(--pp-border); }
-  .pp-credential-row:first-of-type { border-top: none; }
-  .pp-check { width: 20px; height: 20px; border-radius: 50%; background: var(--pp-accent); color: #fff; font-size: 12px; display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
-  .pp-credential-title { font-size: 13px; font-weight: 600; }
-  .pp-credential-subtitle { font-size: 11.5px; color: var(--pp-muted); }
-  .pp-info-btn { margin-left: auto; width: 22px; height: 22px; border-radius: 50%; border: 1px solid var(--pp-border); color: var(--pp-muted); font-size: 11px; display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
-
-  .pp-verify-row { display: flex; gap: 12px; align-items: flex-start; }
-  .pp-seal { width: 40px; height: 40px; border-radius: 50%; background: var(--pp-track); background-size: cover; background-position: center; flex-shrink: 0; }
-  .pp-verify-title { font-size: 13px; font-weight: 700; }
-  .pp-verify-line { font-size: 12px; color: var(--pp-muted); margin-top: 2px; }
-  .pp-verify-status { display: inline-flex; align-items: center; gap: 4px; font-size: 12px; color: var(--pp-accent); font-weight: 600; margin-top: 6px; }
 
   /* ===== Event passport specifics ===== */
   .pp-badge-pip {
@@ -331,12 +303,27 @@ const upNext = agenda.length ? agenda[0] : null;
   }
   .pp-header-actions { display: flex; gap: 8px; align-items: center; }
 
-  .pp-stats { display: grid; grid-template-columns: repeat(4, 1fr); border-bottom: 1px solid var(--pp-border); }
-  @media (max-width: 700px) { .pp-stats { grid-template-columns: repeat(2, 1fr); } }
-  .pp-stat { padding: 16px 24px; border-right: 1px solid var(--pp-border); }
-  .pp-stat:last-child { border-right: none; }
-  .pp-stat-label { font-size: 11px; letter-spacing: 0.06em; text-transform: uppercase; color: var(--pp-muted); margin-bottom: 4px; }
-  .pp-stat-value { font-size: 22px; font-weight: 800; }
+  /* ---- solid, icon-led stat tiles (Total Emissions, Scope 1-3, Energy, Water, Waste, Decarb.) ---- */
+  .pp-stats-grid {
+    display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px;
+    padding: 20px 24px; background: #FAFBFC; border-bottom: 1px solid var(--pp-border);
+  }
+  @media (max-width: 700px) { .pp-stats-grid { grid-template-columns: repeat(2, 1fr); } }
+  .pp-stat-card {
+    background: var(--pp-card);
+    border: 1px solid var(--pp-border);
+    border-radius: var(--pp-radius-md);
+    box-shadow: var(--pp-shadow);
+    padding: 14px 16px;
+  }
+  .pp-stat-icon {
+    width: 34px; height: 34px; border-radius: 50%;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 15px; margin-bottom: 12px;
+  }
+  .pp-stat-label { font-size: 12px; color: var(--pp-muted); margin-bottom: 4px; }
+  .pp-stat-value { font-size: 20px; font-weight: 800; }
+  .pp-stat-unit { font-size: 11px; font-weight: 600; color: var(--pp-muted); margin-left: 2px; }
   .pp-stat-value.pp-accent-value { color: var(--pp-accent); }
 
   .pp-stack-track { display: flex; height: 10px; border-radius: 6px; overflow: hidden; background: var(--pp-track); margin-bottom: 10px; }
@@ -350,19 +337,24 @@ const upNext = agenda.length ? agenda[0] : null;
   .pp-mode-track { height: 8px; background: var(--pp-track); border-radius: 5px; overflow: hidden; }
   .pp-mode-fill { height: 100%; background: var(--pp-accent); border-radius: 5px; }
 
-  .pp-actions-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
-  .pp-action-label { font-size: 11.5px; color: var(--pp-muted); margin-bottom: 2px; }
-  .pp-action-value { font-size: 15px; font-weight: 700; }
-
-  .pp-offset-row { display: flex; justify-content: space-between; font-size: 13px; padding: 6px 0; border-top: 1px solid var(--pp-border); }
-  .pp-offset-row:first-of-type { border-top: none; }
-  .pp-offset-row .pp-offset-label { color: var(--pp-muted); }
-  .pp-offset-row .pp-offset-value { font-weight: 700; }
-  .pp-offset-net .pp-offset-value { color: var(--pp-accent); }
-  .pp-offset-meta { font-size: 11px; color: var(--pp-muted); margin-top: 8px; }
-
   .pp-certs { display: flex; flex-wrap: wrap; gap: 10px; padding: 16px 24px; border-top: 1px solid var(--pp-border); }
   .pp-cert-pill { font-size: 12.5px; font-weight: 600; padding: 8px 16px; border: 1px solid var(--pp-border); border-radius: 999px; }
+  .pp-report-header { display: flex; justify-content: space-between; gap: 24px; padding: 28px 24px 20px; border-bottom: 1px solid var(--pp-border); }
+  .pp-report-company { font-size: 22px; font-weight: 800; }
+  .pp-report-address { margin-top: 6px; font-size: 12px; line-height: 1.5; color: var(--pp-muted); white-space: pre-line; }
+  .pp-scope-layout { display: grid; grid-template-columns: 1fr 1.2fr; gap: 16px; }
+  .pp-scope-row { margin-bottom: 12px; }
+  .pp-scope-label { display: flex; justify-content: space-between; gap: 12px; font-size: 12px; margin-bottom: 4px; }
+  .pp-scope-track { height: 8px; background: var(--pp-track); border-radius: 5px; overflow: hidden; }
+  .pp-scope-fill { height: 100%; background: var(--pp-primary); }
+  .pp-scope-detail { border-bottom: 1px solid var(--pp-border); padding: 9px 0; }
+  .pp-scope-detail:last-child { border-bottom: none; }
+  .pp-scope-detail-head { display: flex; justify-content: space-between; gap: 12px; font-size: 13px; font-weight: 700; }
+  .pp-scope-item { display: flex; justify-content: space-between; gap: 12px; padding: 6px 0 0 16px; font-size: 12px; color: var(--pp-muted); }
+  .pp-kpi-table { width: 100%; border-collapse: collapse; font-size: 12px; }
+  .pp-kpi-table th, .pp-kpi-table td { border-bottom: 1px solid var(--pp-border); padding: 10px 0; text-align: left; }
+  .pp-kpi-table th:last-child, .pp-kpi-table td:last-child { text-align: right; }
+  @media (max-width: 700px) { .pp-report-header, .pp-scope-layout { grid-template-columns: 1fr; display: grid; } }
 </style>
 </head>
 <body>
@@ -379,7 +371,7 @@ const upNext = agenda.length ? agenda[0] : null;
       </div>
       <div class="pp-badge-body">
         <div class="pp-badge-id-row">
-          <div class="pp-badge-avatar" <% if (delegate.photoUrl) { %>style="background-image:url('<%= delegate.photoUrl %>')"<% } %>></div>
+          <div class="pp-badge-avatar" <% if (delegateLogo) { %>style="background-image:url('<%= delegateLogo %>')"<% } %>></div>
           <div>
             <div class="pp-badge-name"><%= fmtNum(delegate.fullName) %></div>
             <div class="pp-badge-subline"><%= fmtNum(delegate.jobTitle) %></div>
@@ -396,20 +388,8 @@ const upNext = agenda.length ? agenda[0] : null;
           </div>
         </div>
 
-        <% if (flags.showAgenda) { %>
-        <div class="pp-badge-section-label">Up next</div>
-        <div class="pp-badge-upnext">
-          <% if (upNext) { %>
-            <div class="pp-badge-upnext-time"><%= upNext.time %> · <%= upNext.location %></div>
-            <div class="pp-badge-upnext-title"><%= upNext.title %></div>
-          <% } else { %>
-            <div class="pp-badge-upnext-title">No sessions scheduled yet.</div>
-          <% } %>
-        </div>
-        <% } %>
-
         <% if (flags.showFootprint) { %>
-        <div class="pp-badge-section-label">My event footprint</div>
+        <div class="pp-badge-section-label">My Carbon footprint</div>
         <div class="pp-badge-footprint">
           <div class="pp-badge-fp-row">
             <div><span class="pp-badge-fp-value"><%= fmtNum(footprint.total) %></span><span class="pp-badge-fp-unit"><%= footprint.unit || 'tCO2e' %></span></div>
@@ -425,16 +405,6 @@ const upNext = agenda.length ? agenda[0] : null;
           </div>
         </div>
         <% } %>
-
-        <% if (flags.showCredentials && credentials.length) { %>
-        <div class="pp-badge-creds-row">
-          <div>
-            <div class="pp-badge-creds-title"><%= credentials[0].title %></div>
-            <div class="pp-badge-creds-sub"><%= credentials[0].subtitle %></div>
-          </div>
-          <div class="pp-badge-info-btn">i</div>
-        </div>
-        <% } %>
       </div>
     </div>
     <!-- <div class="pp-badge-footer-note">Doubles as the live entry badge AND a record of the delegate's own footprint.</div> -->
@@ -445,13 +415,9 @@ const upNext = agenda.length ? agenda[0] : null;
     <div class="pp-card">
 
       <div class="pp-header">
-        <div class="pp-avatar" <% if (delegate.photoUrl) { %>style="background-image:url('<%= delegate.photoUrl %>')"<% } %>></div>
+        <div class="pp-avatar" <% if (delegateLogo) { %>style="background-image:url('<%= delegateLogo %>')"<% } %>></div>
         <div class="pp-header-text">
           <h1><%= fmtNum(delegate.fullName) %> <span class="pp-suffix">· Delegate Passport</span></h1>
-          <div class="pp-subline">
-            <%= fmtNum(event.name) %> <%= fmtNum(event.year) %>
-            <% if (delegate.idNumber) { %> · ID <%= delegate.idNumber %><% } %>
-          </div>
         </div>
       </div>
 
@@ -464,36 +430,14 @@ const upNext = agenda.length ? agenda[0] : null;
           <div class="pp-meta-label">Organization</div>
           <div class="pp-meta-value"><%= fmtNum(delegate.company) %></div>
         </div>
-        <div class="pp-qr-box">
-          <div class="pp-qr-icon" <% if (qr.imageUrl) { %>style="background-image:url('<%= qr.imageUrl %>')"<% } %>></div>
-          <div>
-            <div class="pp-qr-label"><%= qr.label || 'Entry & session check-in QR' %></div>
-            <div class="pp-qr-sublabel"><%= qr.sublabel || 'Scan at doors · valid all event days' %></div>
-          </div>
-        </div>
       </div>
 
-      <!-- <div class="pp-note">Identity + entry QR are the hero — the things a delegate opens most.</div> -->
+      <!-- <div class="pp-note">Identity is the hero — the thing a delegate opens most.</div> -->
 
-      <div class="pp-grid">
-
-        <% if (flags.showAgenda) { %>
+      <% if (flags.showFootprint) { %>
+      <div class="pp-grid pp-grid-single">
         <div class="pp-section">
-          <h2>My agenda</h2>
-          <% agenda.forEach(function(item) { %>
-            <div class="pp-agenda-row">
-              <span class="pp-agenda-time"><%= item.time %></span>
-              <span class="pp-agenda-title"><%= item.title %></span>
-              <span class="pp-agenda-location"><%= item.location %></span>
-            </div>
-          <% }); %>
-          <% if (!agenda.length) { %><div class="pp-agenda-row"><span class="pp-agenda-title">No sessions scheduled yet.</span></div><% } %>
-        </div>
-        <% } %>
-
-        <% if (flags.showFootprint) { %>
-        <div class="pp-section">
-          <h2>My event footprint</h2>
+          <h2>My Carbon footprint</h2>
           <div class="pp-footprint-total">
             <div>
               <span class="pp-footprint-value"><%= fmtNum(footprint.total) %></span>
@@ -508,45 +452,8 @@ const upNext = agenda.length ? agenda[0] : null;
             </div>
           <% }); %>
         </div>
-        <% } %>
-
-        <% if (flags.showCredentials) { %>
-        <div class="pp-section">
-          <h2>Credentials earned</h2>
-          <% credentials.forEach(function(cred) { %>
-            <div class="pp-credential-row">
-              <div class="pp-check">✓</div>
-              <div>
-                <div class="pp-credential-title"><%= cred.title %></div>
-                <div class="pp-credential-subtitle"><%= cred.subtitle %></div>
-              </div>
-              <div class="pp-info-btn">i</div>
-            </div>
-          <% }); %>
-          <% if (!credentials.length) { %><div class="pp-credential-subtitle">No credentials issued yet.</div><% } %>
-        </div>
-        <% } %>
-
-        <% if (flags.showVerification) { %>
-        <div class="pp-section">
-          <h2>Verification & sharing</h2>
-          <div class="pp-verify-row">
-            <div class="pp-seal" <% if (verification.sealImageUrl) { %>style="background-image:url('<%= verification.sealImageUrl %>')"<% } %>></div>
-            <div>
-              <div class="pp-verify-title"><%= verification.credentialType || 'Verifiable Credential (W3C)' %></div>
-              <div class="pp-verify-line">
-                Issuer <%= fmtNum(verification.issuerDid) %> · <%= verification.revocable ? 'Revocable' : 'Non-revocable' %>
-              </div>
-              <div class="pp-verify-status">
-                <%= verification.active ? '● Active' : '○ Inactive' %>
-                <% if (verification.shareContactCard) { %>· Share contact card<% } %>
-              </div>
-            </div>
-          </div>
-        </div>
-        <% } %>
-
       </div>
+      <% } %>
 
       <!-- <div class="pp-footer-note">Privacy-first — only consented fields are shared when networking.</div> -->
     </div>
@@ -556,40 +463,26 @@ const upNext = agenda.length ? agenda[0] : null;
   <% if (flags.showEventPassport) { %>
   <div class="pp-card">
 
-    <div class="pp-header">
-      <div class="pp-logo" <% if (event.logoUrl) { %>style="background-image:url('<%= event.logoUrl %>')"<% } %>></div>
-      <div class="pp-header-text">
-        <h1><%= fmtNum(event.name) %> <%= fmtNum(event.year) %></h1>
-        <div class="pp-subline">
-          <%= fmtNum(event.dates) %> · <%= fmtNum(event.venue) %><% if (event.city) { %>, <%= event.city %><% } %> · Event Passport
+    <div class="pp-report-header">
+      <div>
+        <div class="pp-logo" <% if (companyLogo) { %>style="background-image:url('<%= companyLogo %>')"<% } %>></div>
+        <div class="pp-report-company"><%= fmtNum(company.name) %></div>
+        <% if (company.address) { %><div class="pp-report-address"><%= company.address %></div><% } %>
+      </div>
+    </div>
+
+    <!-- Summary stat cards — solid icon tiles, mirrors the dashboard -->
+    <div class="pp-stats-grid">
+      <% statCardDefs.forEach(function(def) { %>
+      <div class="pp-stat-card">
+        <div class="pp-stat-icon" style="background: <%= def.bg %>; color: <%= def.color %>;"><%= def.icon %></div>
+        <div class="pp-stat-label"><%= def.label %></div>
+        <div class="pp-stat-value<% if (def.accent) { %> pp-accent-value<% } %>">
+          <%= statVal(eventStats[def.key]) %> <span class="pp-stat-unit"><%= statUnit(eventStats[def.key]) %></span>
         </div>
       </div>
-      <div class="pp-header-actions">
-        <% if (event.verified) { %><span class="pp-badge-pip">✓ Verified</span><% } %>
-        <% if (event.myPassportUrl) { %><a class="pp-link-btn" href="<%= event.myPassportUrl %>">→ My passport</a><% } %>
-      </div>
+      <% }); %>
     </div>
-
-    <div class="pp-stats">
-      <div class="pp-stat">
-        <div class="pp-stat-label">Total footprint</div>
-        <div class="pp-stat-value"><%= fmtNum(eventStats.totalFootprint) %> <%= eventStats.unit || 'tCO2e' %></div>
-      </div>
-      <div class="pp-stat">
-        <div class="pp-stat-label">Per delegate</div>
-        <div class="pp-stat-value"><%= fmtNum(eventStats.perDelegate) %> <%= eventStats.unit || 'tCO2e' %></div>
-      </div>
-      <div class="pp-stat">
-        <div class="pp-stat-label">Delegates</div>
-        <div class="pp-stat-value"><%= fmtNum(eventStats.delegates) %></div>
-      </div>
-      <div class="pp-stat">
-        <div class="pp-stat-label">Offset</div>
-        <div class="pp-stat-value pp-accent-value"><%= fmtNum(eventStats.offsetPercent) %><% if (eventStats.offsetPercent !== undefined) { %>%<% } %></div>
-      </div>
-    </div>
-
-    <!-- <div class="pp-note">"Per delegate" is the figure delegates relate to and the same number shown in their own passport.</div> -->
 
     <div class="pp-grid">
 
@@ -624,52 +517,49 @@ const upNext = agenda.length ? agenda[0] : null;
       </div>
       <% } %>
 
-      <% if (flags.showEventSustainabilityActions) { %>
-      <div class="pp-section">
-        <h2>Sustainability actions</h2>
-        <div class="pp-actions-grid">
-          <% eventSustainabilityActions.forEach(function(a) { %>
-            <div>
-              <div class="pp-action-label"><%= a.label %></div>
-              <div class="pp-action-value"><%= a.value %></div>
-            </div>
-          <% }); %>
-        </div>
-      </div>
-      <% } %>
-
-      <% if (flags.showEventOffset) { %>
-      <div class="pp-section">
-        <h2>Offset & net impact</h2>
-        <div class="pp-offset-row">
-          <span class="pp-offset-label">Residual emissions</span>
-          <span class="pp-offset-value"><%= fmtNum(eventOffset.residualEmissions) %> <%= eventOffset.unit || 'tCO2e' %></span>
-        </div>
-        <div class="pp-offset-row">
-          <span class="pp-offset-label">Offset purchased</span>
-          <span class="pp-offset-value"><%= fmtNum(eventOffset.offsetPurchased) %> <%= eventOffset.unit || 'tCO2e' %><% if (eventOffset.offsetLabel) { %> (<%= eventOffset.offsetLabel %>)<% } %></span>
-        </div>
-        <div class="pp-offset-row pp-offset-net">
-          <span class="pp-offset-label">Net</span>
-          <span class="pp-offset-value"><%= eventOffset.net || '—' %></span>
-        </div>
-        <% if (eventOffset.registry || eventOffset.projectId || eventOffset.vintage) { %>
-        <div class="pp-offset-meta">
-          <% if (eventOffset.registry) { %><%= eventOffset.registry %><% } %>
-          <% if (eventOffset.projectId) { %> · Project <%= eventOffset.projectId %><% } %>
-          <% if (eventOffset.vintage) { %> · Vintage <%= eventOffset.vintage %><% } %>
-        </div>
-        <% } %>
-      </div>
-      <% } %>
-
     </div>
 
-    <% if (flags.showEventCertifications && eventCertifications.length) { %>
-    <div class="pp-certs">
-      <% eventCertifications.forEach(function(cert) { %>
-        <span class="pp-cert-pill"><%= cert %></span>
-      <% }); %>
+    <% if (scopeBreakdown.length) { %>
+    <div class="pp-grid pp-grid-single">
+      <div class="pp-section">
+        <h2>Emissions Breakdown by Scope</h2>
+        <div class="pp-scope-layout">
+          <div>
+            <% scopeBreakdown.forEach(function(scope) { %>
+            <div class="pp-scope-row">
+              <div class="pp-scope-label"><span><%= scope.scope %> - <%= scope.label %></span><span><%= scope.value %> <%= scope.unit || 'tCO2e' %></span></div>
+              <div class="pp-scope-track"><div class="pp-scope-fill" style="width: <%= scope.percent || 0 %>%"></div></div>
+            </div>
+            <% }); %>
+          </div>
+          <div>
+            <% scopeBreakdown.forEach(function(scope) { %>
+            <div class="pp-scope-detail">
+              <div class="pp-scope-detail-head"><span><%= scope.scope %> - <%= scope.label %></span><span><%= scope.value %> <%= scope.unit || 'tCO2e' %></span></div>
+              <% (scope.items || []).forEach(function(item) { %>
+              <div class="pp-scope-item"><span><%= item.label %></span><span><%= item.value %> <%= item.unit || scope.unit || 'tCO2e' %></span></div>
+              <% }); %>
+            </div>
+            <% }); %>
+          </div>
+        </div>
+      </div>
+    </div>
+    <% } %>
+
+    <% if (intensityMetrics.length) { %>
+    <div class="pp-grid pp-grid-single">
+      <div class="pp-section">
+        <h2>Emissions Intensity Metrics</h2>
+        <table class="pp-kpi-table">
+          <thead><tr><th>KPI Metric</th><th>Value</th></tr></thead>
+          <tbody>
+            <% intensityMetrics.forEach(function(metric) { %>
+            <tr><td><%= metric.label %></td><td><%= metric.value %> <%= metric.unit || 'tCO2e' %></td></tr>
+            <% }); %>
+          </tbody>
+        </table>
+      </div>
     </div>
     <% } %>
 
