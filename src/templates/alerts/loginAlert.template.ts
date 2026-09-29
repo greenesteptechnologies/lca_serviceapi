@@ -24,6 +24,14 @@ export function buildLoginAlertEmail(data: LoginAlertData) {
   const safeCompanyId = escapeHtml(data.companyId);
   const safeHostName = escapeHtml(data.hostName);
   const safeCorrelationId = escapeHtml(data.correlationId);
+  const safeIp = escapeHtml(data.ip);
+  const safeLatitude = escapeHtml(data.latitude);
+  const safeLongitude = escapeHtml(data.longitude);
+  const safeState = escapeHtml(data.state);
+  const safeCity = escapeHtml(data.city);
+  const safeCountry = escapeHtml(data.country);
+  const safeDeviceName = escapeHtml(data.deviceName);
+  const safeBrowserName = escapeHtml(data.browserName);
 
   const text = `
 JIVA Digital LCSA Security Alert — New Login Detected
@@ -37,6 +45,13 @@ Company Name: ${data.companyName ?? "N/A"}
 Company ID: ${data.companyId ?? "N/A"}
 Host Name: ${data.hostName ?? "N/A"}
 Correlation ID: ${data.correlationId ?? "N/A"}
+IP Address: ${data.ip ?? "N/A"}
+Latitude: ${data.latitude ?? "N/A"}
+Longitude: ${data.longitude ?? "N/A"}
+State: ${data.state ?? "N/A"}
+City: ${data.city ?? "N/A"}
+Country: ${data.country ?? "N/A"}
+Device / Browser: ${data.deviceName ?? "N/A"} / ${data.browserName ?? "N/A"}
 Login Time: ${loginTime} (IST)
 
 If this was you, no action is needed.
@@ -121,6 +136,34 @@ If you don't recognize this activity, please contact your administrator or reset
                   <tr>
                     <td style="padding:14px 16px; border-bottom:1px solid #e5e9ee; font-size:13px; color:#5f6b7a;">Correlation ID</td>
                     <td style="padding:14px 16px; border-bottom:1px solid #e5e9ee; font-size:13px; color:#0f2540; font-weight:600; font-family:'Courier New', monospace;">${safeCorrelationId}</td>
+                  </tr>
+                  <tr>
+                    <td style="padding:14px 16px; background-color:#f9fafb; border-bottom:1px solid #e5e9ee; font-size:13px; color:#5f6b7a;">IP Address</td>
+                    <td style="padding:14px 16px; background-color:#f9fafb; border-bottom:1px solid #e5e9ee; font-size:13px; color:#0f2540; font-weight:600;">${safeIp}</td>
+                  </tr>
+                  <tr>
+                    <td style="padding:14px 16px; border-bottom:1px solid #e5e9ee; font-size:13px; color:#5f6b7a;">Latitude</td>
+                    <td style="padding:14px 16px; border-bottom:1px solid #e5e9ee; font-size:13px; color:#0f2540; font-weight:600;">${safeLatitude}</td>
+                  </tr>
+                  <tr>
+                    <td style="padding:14px 16px; background-color:#f9fafb; border-bottom:1px solid #e5e9ee; font-size:13px; color:#5f6b7a;">Longitude</td>
+                    <td style="padding:14px 16px; background-color:#f9fafb; border-bottom:1px solid #e5e9ee; font-size:13px; color:#0f2540; font-weight:600;">${safeLongitude}</td>
+                  </tr>
+                  <tr>
+                    <td style="padding:14px 16px; border-bottom:1px solid #e5e9ee; font-size:13px; color:#5f6b7a;">State</td>
+                    <td style="padding:14px 16px; border-bottom:1px solid #e5e9ee; font-size:13px; color:#0f2540; font-weight:600;">${safeState}</td>
+                  </tr>
+                  <tr>
+                    <td style="padding:14px 16px; background-color:#f9fafb; border-bottom:1px solid #e5e9ee; font-size:13px; color:#5f6b7a;">City</td>
+                    <td style="padding:14px 16px; background-color:#f9fafb; border-bottom:1px solid #e5e9ee; font-size:13px; color:#0f2540; font-weight:600;">${safeCity}</td>
+                  </tr>
+                  <tr>
+                    <td style="padding:14px 16px; border-bottom:1px solid #e5e9ee; font-size:13px; color:#5f6b7a;">Country</td>
+                    <td style="padding:14px 16px; border-bottom:1px solid #e5e9ee; font-size:13px; color:#0f2540; font-weight:600;">${safeCountry}</td>
+                  </tr>
+                  <tr>
+                    <td style="padding:14px 16px; background-color:#f9fafb; border-bottom:1px solid #e5e9ee; font-size:13px; color:#5f6b7a;">Device / Browser</td>
+                    <td style="padding:14px 16px; background-color:#f9fafb; border-bottom:1px solid #e5e9ee; font-size:13px; color:#0f2540; font-weight:600;">${safeDeviceName} / ${safeBrowserName}</td>
                   </tr>
                   <tr>
                     <td style="padding:14px 16px; background-color:#f9fafb; font-size:13px; color:#5f6b7a;">Login Time</td>
