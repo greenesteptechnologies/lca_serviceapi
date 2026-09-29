@@ -55,10 +55,18 @@ export async function loginAlert(req: Request, res: Response) {
       email: identity.email,
       userId: identity.userId,
       companyId: identity.companyId,
-      userName: identity.userName,
-      companyName: identity.companyName,
+      userName: identity.userName ?? (typeof req.body?.userName === "string" ? req.body.userName.trim() || undefined : undefined),
+      companyName: identity.companyName ?? (typeof req.body?.companyName === "string" ? req.body.companyName.trim() || undefined : undefined),
       hostName: req.hostname,
       correlationId: req.correlationId,
+      ip: req.ip,
+      latitude: req.body?.latitude,
+      longitude: req.body?.longitude,
+      state: req.body?.state,
+      city: req.body?.city,
+      country: req.body?.country,
+      deviceName: req.body?.deviceName,
+      browserName: req.body?.browserName,
     });
 
     return res.status(200).json({
@@ -117,7 +125,7 @@ export async function onboardingAlert(req: Request, res: Response) {
 
     return res.status(200).json({
       success: true,
-      message: "Registration alert sent successfully",
+      message: "Onboarding alert sent successfully",
     });
   } catch (error) {
     console.error("Onboarding alert error:", error);
