@@ -1,4 +1,5 @@
 import { Request, Response } from "express";
+import { isIP } from "node:net";
 import {
   sendLoginAlertEmail,
   sendOnboardingAlertEmail,
@@ -59,7 +60,9 @@ export async function loginAlert(req: Request, res: Response) {
       companyName: identity.companyName ?? (typeof req.body?.companyName === "string" ? req.body.companyName.trim() || undefined : undefined),
       hostName: req.hostname,
       correlationId: req.correlationId,
-      ip: req.ip,
+      ip: typeof req.body?.ip === "string" && isIP(req.body.ip.trim())
+        ? req.body.ip.trim()
+        : undefined,
       latitude: req.body?.latitude,
       longitude: req.body?.longitude,
       state: req.body?.state,
