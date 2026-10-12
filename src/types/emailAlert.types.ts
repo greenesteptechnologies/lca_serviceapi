@@ -6,6 +6,14 @@ export interface LoginAlertData {
   companyName?: string;
   hostName?: string;
   correlationId?: string;
+  ip?: string;
+  latitude?: number | null;
+  longitude?: number | null;
+  state?: string;
+  city?: string;
+  country?: string;
+  deviceName?: string;
+  browserName?: string;
 }
 
 export interface RegistrationAlertData {

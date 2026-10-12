@@ -8,6 +8,8 @@ import { ENV } from "./config/env";
 import { logger } from "./config/logger";
 
 import { requestMiddleware } from "./middlewares/request.middleware";
+import { apiUsageLogMiddleware } from "./middlewares/apiUsageLog.middleware";
+import { auditLogMiddleware } from "./middlewares/auditLog.middleware";
 import { errorHandler } from "./middlewares/error.middleware";
 import { globalRateLimiter } from "./middlewares/rateLimit.middleware";
 
@@ -30,6 +32,8 @@ app.use(cookieParser());
 
 // REQUEST CONTEXT / CORRELATION ID
 app.use(requestMiddleware);
+app.use(apiUsageLogMiddleware);
+app.use(auditLogMiddleware);
 
 // CORS CONFIGURATION
 const normalizeOrigin = (value: string) =>
