@@ -707,3 +707,38 @@ paths:
           description: Invalid passportType value
         '404':
           description: Digital Passport not found
+
+  /api/v1/dpp/{companyDigitalPassportId}:
+    delete:
+      tags:
+        - Digital Passport
+      summary: Delete a Digital Passport
+      description: Deletes a passport for the authenticated company. Only passports in DRAFT or REVIEWED status can be deleted.
+      security:
+        - ApiKeyAuth: []
+          BearerAuth: []
+      parameters:
+        - in: path
+          name: companyDigitalPassportId
+          required: true
+          schema:
+            type: integer
+          description: Digital Passport record ID.
+      responses:
+        '200':
+          description: Digital Passport deleted successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                  message:
+                    type: string
+        '400':
+          description: Invalid DPP ID or status not allowed for deletion
+        '401':
+          description: Unauthorized - invalid JWT claims
+        '404':
+          description: Digital Passport not found

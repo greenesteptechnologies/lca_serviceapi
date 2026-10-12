@@ -1,6 +1,7 @@
 import { Router } from "express";
 
 import {
+  deleteCompanyDPP,
   generateDpp,
   getCompanyDppMeta,
   previewCompanyDppHtml,
@@ -16,5 +17,6 @@ router.post("/generate", verifyJWT, authenticatedRateLimiter, generateDpp);
 router.get("/meta", verifyJWT, authenticatedRateLimiter, getCompanyDppMeta);
 router.patch("/:companyDigitalPassportId/status", verifyJWT, authenticatedRateLimiter, updateDppStatus);
 router.get("/preview/:publicToken", verifyJWT, authenticatedRateLimiter, previewCompanyDppHtml);
+router.delete("/:companyDigitalPassportId", verifyJWT, authenticatedRateLimiter, deleteCompanyDPP);
 
 export default router;
