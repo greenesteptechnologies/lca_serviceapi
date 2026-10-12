@@ -195,3 +195,15 @@ export const getPublicCompanyDppByTokenQuery = `
     AND PassportType = @PassportType
   ORDER BY PublishedOn DESC, CompanyDigitalPassportID DESC
 `;
+
+
+export const deleteCompanyDppQuery = `
+  UPDATE lca_master.gs_CompanyDigitalPassport
+  SET IsActive = 0,
+      ModifiedOn = GETDATE(),
+      ModifiedBy = @ModifiedBy
+  WHERE CompanyDigitalPassportID = @CompanyDigitalPassportID
+  AND ISActive = 1
+  AND CompanyID = @CompanyID
+  AND IsPublished = 0
+`;
