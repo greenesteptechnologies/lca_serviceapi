@@ -35,6 +35,41 @@ export const getActiveSystemSecretByNameQuery = `
     AND IsExposedToApi = 1
 `;
 
+export const getCompanyModulesQuery = `SELECT
+    cs.CompanyID,
+    cs.CompanySubscriptionID,
+    s.SubscriptionTypeID,
+    s.SubscriptionName,
+    m.ModuleID,
+    m.ParentModuleID,
+    m.ModuleCode,
+    CASE
+        WHEN m.ModuleName = N'Oragnisation Profile' THEN N'Organisation Profile'
+        ELSE m.ModuleName
+    END AS ModuleName,
+    m.DisplayOrder
+
+FROM [LCA_SANDBOX].[lca_master].[gs_CompanySubscription] cs
+
+INNER JOIN [LCA_SANDBOX].[lca_common].[gs_SubscriptionTypeMaster] s
+    ON cs.SubscriptionTypeID = s.SubscriptionTypeID
+
+INNER JOIN [LCA_SANDBOX].[lca_common].[gs_SubscriptionModuleMapping] sm
+    ON s.SubscriptionTypeID = sm.SubscriptionTypeID
+
+INNER JOIN [LCA_SANDBOX].[lca_common].[gs_ModuleMaster] m
+    ON sm.ModuleID = m.ModuleID
+
+WHERE cs.CompanyID = @CompanyID
+  AND cs.IsActive = 1
+  AND s.IsActive = 1
+  AND cs.StartDate <= GETDATE()
+  AND (cs.EndDate IS NULL OR cs.EndDate >= GETDATE())
+
+ORDER BY
+    m.DisplayOrder,
+    m.ModuleID;`;
+
 export const getCarbonAssessmentAICommentsQuery = `
   SELECT
     CompanyID AS companyId,
