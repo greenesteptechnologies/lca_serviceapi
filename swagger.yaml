@@ -3,7 +3,7 @@ openapi: 3.0.0
 info:
   title: LCA Service API
   version: 1.0.0
-  description: AI, Secrets, and Company DPP APIs
+  description: AI, Secrets, Company DPP, and Module APIs
 
 servers:
   - url: http://localhost:5000
@@ -31,6 +31,24 @@ components:
           type: object
 
 paths:
+  /api/v1/modules/company-modules:
+    get:
+      tags:
+        - Modules
+      summary: Get modules assigned to the authenticated company
+      description: Returns active subscription modules for the company ID in the authenticated JWT. Each module contains menus, and each menu contains submenus.
+      security:
+        - BearerAuth: []
+      responses:
+        '200':
+          description: Company modules retrieved
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SuccessResponse'
+        '401':
+          description: Unauthorized - missing or invalid JWT token
+
   /api/v1/ai/generate:
     post:
       tags:

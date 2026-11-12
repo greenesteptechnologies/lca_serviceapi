@@ -18,6 +18,7 @@ import secretsRoutes from "./routes/secrets.routes";
 import companyDppRoutes from "./routes/dpp.routes";
 import { serveCompanyDppHtml } from "./controllers/dpp.controller";
 import alertRoutes from "./routes/alert.routes";
+import modulesRoutes from "./routes/compnayModule.routes";
 
 import { swaggerServe, swaggerSetup } from "./config/swagger";
 
@@ -171,6 +172,7 @@ app.use("/api/v1/ai", aiRoutes);
 app.use("/api/v1/secrets", secretsRoutes);
 app.use("/api/v1/dpp", companyDppRoutes);
 app.use("/api/v1/alerts", alertRoutes);
+app.use("/api/v1/modules", modulesRoutes);
 
 // GLOBAL ERROR HANDLER
 app.use(errorHandler);
