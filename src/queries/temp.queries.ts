@@ -47,7 +47,8 @@ export const getCompanyModulesQuery = `SELECT
         WHEN m.ModuleName = N'Oragnisation Profile' THEN N'Organisation Profile'
         ELSE m.ModuleName
     END AS ModuleName,
-    m.DisplayOrder
+    m.DisplayOrder,
+    m.RoutePath AS RoutePath
 
 FROM [LCA_SANDBOX].[lca_master].[gs_CompanySubscription] cs
 
