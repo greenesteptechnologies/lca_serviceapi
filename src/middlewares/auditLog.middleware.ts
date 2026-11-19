@@ -11,6 +11,10 @@ const actionByMethod: Record<string, string> = {
   DELETE: "DELETE",
 };
 
+const actionByMethodAndRoute: Record<string, string> = {
+  "POST /ai/comments/bulk": "UPSERT",
+};
+
 const sensitiveFieldPattern =
   /password|passwd|pwd|secret|token|credential|authorization|api.?key|client.?key|private.?key|salt/i;
 
@@ -197,35 +201,31 @@ export const auditLogMiddleware = (
     }
 
     const endpoint = getEndpoint(req);
-    const isSecretEndpoint =
-      /^\/api\/v\d+\/secrets\/system-secret(?:\/|$)/i.test(endpoint);
     const serializedResponse = responsePayload === undefined
       ? "null"
       : JSON.stringify(responsePayload);
-    const responseData = isSecretEndpoint
-      ? "[REDACTED]"
-      : serializedResponse === undefined
-        ? "null"
-        : JSON.stringify(
-            sanitizeAuditData(JSON.parse(serializedResponse)),
-          );
+    const responseData = serializedResponse === undefined
+      ? "null"
+      : JSON.stringify(
+          sanitizeAuditData(JSON.parse(serializedResponse)),
+        );
     const details = JSON.stringify({
       Old: null,
       New: responseData,
     });
 
-    const normalizedEndpoint = endpoint.toLowerCase();
+    const normalizedEndpoint = endpoint
+      .toLowerCase()
+      .replace(/^\/api\/v\d+/i, "") || "/";
     const actionName =
-      req.method === "POST" && normalizedEndpoint.endsWith("/comments/bulk")
-        ? "UPSERT"
-        : action;
+      actionByMethodAndRoute[`${req.method} ${normalizedEndpoint}`] ?? action;
 
     void getPool()
       .then((pool) =>
         persistApiAuditLog(pool, {
           companyId,
           userId,
-          serviceName: "LCA.Tenant.Api",
+          serviceName: "LCA.Service.Api",
           action: actionName,
           actionStatus: res.statusCode < 400 ? "SUCCESS" : "FAILED",
           entityName: getEntityName(endpoint),
