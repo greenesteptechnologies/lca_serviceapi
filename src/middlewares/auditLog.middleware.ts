@@ -229,7 +229,7 @@ export const auditLogMiddleware = (
           action: actionName,
           actionStatus: res.statusCode < 400 ? "SUCCESS" : "FAILED",
           entityName: getEntityName(endpoint),
-          entityKey: getEntityKey(req, responsePayload),
+          entityKey: getEntityKey(req, responsePayload) ?? correlationId,
           details,
           correlationId,
         }),
